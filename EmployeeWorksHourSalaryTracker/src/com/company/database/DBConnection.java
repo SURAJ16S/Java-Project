@@ -11,6 +11,21 @@ public class DBConnection {
 
     private static Connection connection = null;
 
+    static {
+        try {
+            // Load JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("Database connection initialized successfully.");
+        } catch (ClassNotFoundException e) {
+            System.err.println("MySQL JDBC Driver not found.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Failed to connect to MySQL database.");
+            e.printStackTrace();
+        }
+    }
+
     public static Connection getConnection() {
         if (connection == null) {
             try {

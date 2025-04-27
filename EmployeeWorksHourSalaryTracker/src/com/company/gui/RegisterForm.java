@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import com.formdev.flatlaf.FlatIntelliJLaf;
 
 public class RegisterForm extends JFrame {
     private JTextField usernameField;
@@ -87,5 +88,18 @@ public class RegisterForm extends JFrame {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Registration failed: " + ex.getMessage());
         }
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(new FlatIntelliJLaf());
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize LaF");
+        }
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new RegisterForm().setVisible(true);
+            }
+        });
     }
 }
