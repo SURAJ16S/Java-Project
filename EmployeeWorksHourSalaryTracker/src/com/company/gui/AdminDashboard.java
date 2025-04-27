@@ -3,6 +3,7 @@ package com.company.gui;
 import com.company.database.DBConnection;
 import com.company.utils.QRCodeGenerator;
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -35,12 +36,37 @@ public class AdminDashboard extends JFrame {
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Header panel with title
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(240, 240, 245));
         JLabel titleLabel = new JLabel("Admin Dashboard");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(50, 50, 50));
-        headerPanel.add(titleLabel);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        // Add Logout button
+        JButton logoutBtn = new JButton("Logout");
+        logoutBtn.setBackground(new Color(180, 70, 70));
+        logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        logoutBtn.setFocusPainted(false);
+        logoutBtn.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        logoutBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                logoutBtn.setBackground(new Color(160, 60, 60));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                logoutBtn.setBackground(new Color(180, 70, 70));
+            }
+        });
+        logoutBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                new LoginFrame().setVisible(true);
+                dispose();
+            }
+        });
+        JPanel logoutPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        logoutPanel.setBackground(new Color(240, 240, 245));
+        logoutPanel.add(logoutBtn);
+        headerPanel.add(logoutPanel, BorderLayout.EAST);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Tabbed pane for different sections
@@ -59,6 +85,8 @@ public class AdminDashboard extends JFrame {
         tabbedPane.addTab("Employees", createEmployeesPanel());
         tabbedPane.addTab("Attendance", createAttendancePanel());
         tabbedPane.addTab("Salary", createSalaryPanel());
+        tabbedPane.addTab("Pay Salary", createPaySalaryPanel());
+        tabbedPane.addTab("Salary History", createSalaryHistoryPanel());
         
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
         
@@ -217,7 +245,7 @@ public class AdminDashboard extends JFrame {
                 loadJobApplications(model);
             }
         });
-        
+
         JButton viewDetailsBtn = createStyledButton("View Details");
         viewDetailsBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -265,32 +293,9 @@ public class AdminDashboard extends JFrame {
             }
         });
         
-        JButton assignWorkBtn = createStyledButton("Assign Work");
-        assignWorkBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                int selectedRow = table.getSelectedRow();
-                if (selectedRow >= 0) {
-                    int applicationId = (int) model.getValueAt(selectedRow, 0);
-                    String status = (String) model.getValueAt(selectedRow, 5);
-                    if (status.equals("approved")) {
-                        openWorkAssignmentDialog(applicationId);
-                    } else {
-                        JOptionPane.showMessageDialog(AdminDashboard.this, 
-                            "Only approved applications can be assigned work.", 
-                            "Invalid Action", JOptionPane.WARNING_MESSAGE);
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(AdminDashboard.this, 
-                        "Please select an application to assign work.", 
-                        "No Selection", JOptionPane.WARNING_MESSAGE);
-                }
-            }
-        });
-        
         buttonPanel.add(refreshBtn);
         buttonPanel.add(viewDetailsBtn);
         buttonPanel.add(approveBtn);
-        buttonPanel.add(assignWorkBtn);
         
         panel.add(buttonPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -602,8 +607,33 @@ public class AdminDashboard extends JFrame {
             }
         });
         
+        JButton assignWorkBtn = createStyledButton("Assign Work");
+        assignWorkBtn.setBackground(new Color(60, 179, 113));
+        assignWorkBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                assignWorkBtn.setBackground(new Color(50, 150, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                assignWorkBtn.setBackground(new Color(60, 179, 113));
+            }
+        });
+        assignWorkBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    String employeeId = (String) model.getValueAt(selectedRow, 0);
+                    openWorkAssignmentDialogForEmployee(employeeId);
+                } else {
+                    JOptionPane.showMessageDialog(AdminDashboard.this, 
+                        "Please select an employee to assign work.", 
+                        "No Selection", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        
         buttonPanel.add(refreshBtn);
         buttonPanel.add(addEmployeeBtn);
+        buttonPanel.add(assignWorkBtn);
         
         panel.add(buttonPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -638,6 +668,17 @@ public class AdminDashboard extends JFrame {
             ex.printStackTrace();
             statusBar.setText("Error loading employees: " + ex.getMessage());
         }
+    }
+    
+    private void openWorkAssignmentDialogForEmployee(String employeeId) {
+        WorkAssignmentDialog dialog = new WorkAssignmentDialog(this, employeeId);
+        dialog.setVisible(true);
+        // Refresh the employees table after dialog closes
+        JPanel employeesPanel = (JPanel) tabbedPane.getComponentAt(2);
+        JScrollPane scrollPane = (JScrollPane) employeesPanel.getComponent(1);
+        JTable table = (JTable) scrollPane.getViewport().getView();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        loadEmployees(model);
     }
     
     private JPanel createAttendancePanel() {
@@ -694,21 +735,25 @@ public class AdminDashboard extends JFrame {
                           "ORDER BY a.work_date DESC, a.start_time DESC";
             PreparedStatement pst = con.prepareStatement(query);
             ResultSet rs = pst.executeQuery();
-            
+            boolean hasData = false;
             while (rs.next()) {
+                hasData = true;
                 Vector<Object> row = new Vector<>();
                 row.add(rs.getInt("attendance_id"));
                 row.add(rs.getString("employee_id"));
                 row.add(rs.getString("full_name"));
-                row.add(rs.getDate("work_date"));
+                row.add(rs.getDate("work_date") != null ? rs.getDate("work_date").toString() : "");
                 row.add(rs.getString("shift_type"));
-                row.add(rs.getTime("start_time"));
-                row.add(rs.getTime("end_time") != null ? rs.getTime("end_time") : "Not clocked out");
+                row.add(rs.getTime("start_time") != null ? rs.getTime("start_time").toString() : "");
+                row.add(rs.getTime("end_time") != null ? rs.getTime("end_time").toString() : "Not clocked out");
                 row.add(rs.getDouble("working_hours") != 0 ? rs.getDouble("working_hours") : "In progress");
                 model.addRow(row);
             }
-            
-            statusBar.setText("Attendance records loaded successfully.");
+            if (!hasData) {
+                statusBar.setText("No attendance records found.");
+            } else {
+                statusBar.setText("Attendance records loaded successfully.");
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error loading attendance records: " + ex.getMessage());
@@ -777,23 +822,27 @@ public class AdminDashboard extends JFrame {
                           "ORDER BY s.year DESC, s.month DESC";
             PreparedStatement pst = con.prepareStatement(query);
             ResultSet rs = pst.executeQuery();
-            
+            boolean hasData = false;
             while (rs.next()) {
+                hasData = true;
                 Vector<Object> row = new Vector<>();
                 row.add(rs.getInt("calculation_id"));
                 row.add(rs.getString("employee_id"));
                 row.add(rs.getString("full_name"));
                 row.add(rs.getInt("month"));
                 row.add(rs.getInt("year"));
-                row.add(rs.getDouble("base_salary"));
-                row.add(rs.getDouble("night_shift_allowance"));
-                row.add(rs.getDouble("overtime_pay"));
-                row.add(rs.getDouble("hourly_pay"));
-                row.add(rs.getDouble("total_salary"));
+                row.add(String.format("₹%,.2f", rs.getDouble("base_salary")));
+                row.add(String.format("₹%,.2f", rs.getDouble("night_shift_allowance")));
+                row.add(String.format("₹%,.2f", rs.getDouble("overtime_pay")));
+                row.add(String.format("₹%,.2f", rs.getDouble("hourly_pay")));
+                row.add(String.format("₹%,.2f", rs.getDouble("total_salary")));
                 model.addRow(row);
             }
-            
-            statusBar.setText("Salary calculations loaded successfully.");
+            if (!hasData) {
+                statusBar.setText("No salary calculations found.");
+            } else {
+                statusBar.setText("Salary calculations loaded successfully.");
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error loading salary calculations: " + ex.getMessage());
@@ -801,10 +850,84 @@ public class AdminDashboard extends JFrame {
     }
     
     private void calculateSalaries() {
-        // TODO: Implement salary calculation logic
-        JOptionPane.showMessageDialog(this, 
-            "Salary calculation functionality will be implemented soon.", 
-            "Coming Soon", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            Connection con = DBConnection.getConnection();
+            int currentMonth = java.time.LocalDate.now().getMonthValue();
+            int currentYear = java.time.LocalDate.now().getYear();
+            // Get all employees
+            String empQuery = "SELECT employee_id FROM employees";
+            PreparedStatement empStmt = con.prepareStatement(empQuery);
+            ResultSet empRs = empStmt.executeQuery();
+            int count = 0;
+            while (empRs.next()) {
+                String employeeId = empRs.getString("employee_id");
+                // Sum up work assignments for this employee for the current month
+                String workQuery = "SELECT SUM(hours) as total_hours, AVG(hourly_rate) as avg_rate FROM work_assignments WHERE employee_id = ? AND MONTH(start_date) = ? AND YEAR(start_date) = ? AND status = 'active'";
+                PreparedStatement workStmt = con.prepareStatement(workQuery);
+                workStmt.setString(1, employeeId);
+                workStmt.setInt(2, currentMonth);
+                workStmt.setInt(3, currentYear);
+                ResultSet workRs = workStmt.executeQuery();
+                double totalHours = 0;
+                double avgRate = 0;
+                if (workRs.next()) {
+                    totalHours = workRs.getDouble("total_hours");
+                    avgRate = workRs.getDouble("avg_rate");
+                }
+                // Calculate salary (basic: hours * rate)
+                double baseSalary = totalHours * avgRate;
+                double nightShiftAllowance = 0; // You can add logic for this
+                double overtimePay = 0; // You can add logic for this
+                double hourlyPay = baseSalary; // For now, same as base
+                double totalSalary = baseSalary + nightShiftAllowance + overtimePay;
+                // Insert or update salary_calculations
+                String checkQuery = "SELECT calculation_id FROM salary_calculations WHERE employee_id = ? AND month = ? AND year = ?";
+                PreparedStatement checkStmt = con.prepareStatement(checkQuery);
+                checkStmt.setString(1, employeeId);
+                checkStmt.setInt(2, currentMonth);
+                checkStmt.setInt(3, currentYear);
+                ResultSet checkRs = checkStmt.executeQuery();
+                if (checkRs.next()) {
+                    // Update
+                    int calcId = checkRs.getInt("calculation_id");
+                    String updateQuery = "UPDATE salary_calculations SET base_salary = ?, night_shift_allowance = ?, overtime_pay = ?, hourly_pay = ?, total_salary = ? WHERE calculation_id = ?";
+                    PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+                    updateStmt.setDouble(1, baseSalary);
+                    updateStmt.setDouble(2, nightShiftAllowance);
+                    updateStmt.setDouble(3, overtimePay);
+                    updateStmt.setDouble(4, hourlyPay);
+                    updateStmt.setDouble(5, totalSalary);
+                    updateStmt.setInt(6, calcId);
+                    updateStmt.executeUpdate();
+                } else {
+                    // Insert
+                    String insertQuery = "INSERT INTO salary_calculations (employee_id, month, year, base_salary, night_shift_allowance, overtime_pay, hourly_pay, total_salary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    PreparedStatement insertStmt = con.prepareStatement(insertQuery);
+                    insertStmt.setString(1, employeeId);
+                    insertStmt.setInt(2, currentMonth);
+                    insertStmt.setInt(3, currentYear);
+                    insertStmt.setDouble(4, baseSalary);
+                    insertStmt.setDouble(5, nightShiftAllowance);
+                    insertStmt.setDouble(6, overtimePay);
+                    insertStmt.setDouble(7, hourlyPay);
+                    insertStmt.setDouble(8, totalSalary);
+                    insertStmt.executeUpdate();
+                }
+                count++;
+            }
+            statusBar.setText("Salaries calculated for " + count + " employees.");
+            JOptionPane.showMessageDialog(this, "Salaries calculated for " + count + " employees.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            // Refresh salary table
+            JPanel salaryPanel = (JPanel) tabbedPane.getComponentAt(4);
+            JScrollPane scrollPane = (JScrollPane) salaryPanel.getComponent(1);
+            JTable table = (JTable) scrollPane.getViewport().getView();
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            loadSalaryCalculations(model);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error calculating salaries: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error calculating salaries: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // A helper method to create a styled JButton
@@ -826,6 +949,308 @@ public class AdminDashboard extends JFrame {
         });
         
         return button;
+    }
+
+    // Add the Pay Salary panel
+    private JPanel createPaySalaryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(240, 240, 245));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        String[] columnNames = {"Employee ID", "Name", "Month", "Year", "Total Salary", "Status"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(70, 130, 180));
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        buttonPanel.setBackground(new Color(240, 240, 245));
+
+        JButton refreshBtn = createStyledButton("Refresh");
+        refreshBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                loadPendingSalaries(model);
+            }
+        });
+
+        JButton payBtn = createStyledButton("Pay");
+        payBtn.setBackground(new Color(60, 179, 113));
+        payBtn.setEnabled(false);
+        payBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (payBtn.isEnabled()) payBtn.setBackground(new Color(50, 150, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                payBtn.setBackground(new Color(60, 179, 113));
+            }
+        });
+        payBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    String employeeId = (String) model.getValueAt(selectedRow, 0);
+                    String name = (String) model.getValueAt(selectedRow, 1);
+                    int month = (int) model.getValueAt(selectedRow, 2);
+                    int year = (int) model.getValueAt(selectedRow, 3);
+                    String totalSalaryStr = (String) model.getValueAt(selectedRow, 4);
+                    double totalSalary = Double.parseDouble(totalSalaryStr.replaceAll("[^0-9.]", ""));
+                    if (totalSalary > 0) {
+                        // Generate QR code
+                        String qrContent = "Pay ₹" + totalSalary + " to " + name + " (" + employeeId + ")";
+                        ImageIcon qrIcon = null;
+                        try {
+                            java.awt.image.BufferedImage qrImg = QRCodeGenerator.generateQRCode(qrContent, 200, Color.WHITE, Color.BLACK, ErrorCorrectionLevel.H);
+                            qrIcon = new ImageIcon(qrImg);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                        JLabel qrLabel = qrIcon != null ? new JLabel(qrIcon) : new JLabel("[QR Code]");
+                        JPanel qrPanel = new JPanel(new BorderLayout());
+                        qrPanel.add(new JLabel("Scan to pay:"), BorderLayout.NORTH);
+                        qrPanel.add(qrLabel, BorderLayout.CENTER);
+                        // Custom dialog with 'Pay' button
+                        JDialog payDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(panel), "Pay Salary", true);
+                        payDialog.setSize(350, 420);
+                        payDialog.setLocationRelativeTo(panel);
+                        payDialog.setUndecorated(true);
+                        JPanel dialogPanel = new JPanel(new BorderLayout(0, 0));
+                        dialogPanel.setBackground(new Color(245, 250, 255));
+                        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(70, 130, 180), 2, true),
+                            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+                        ));
+                        // Header
+                        JLabel header = new JLabel("Salary Payment", SwingConstants.CENTER);
+                        header.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                        header.setForeground(new Color(60, 120, 180));
+                        dialogPanel.add(header, BorderLayout.NORTH);
+                        // QR and info
+                        JPanel qrInfoPanel = new JPanel();
+                        qrInfoPanel.setLayout(new BoxLayout(qrInfoPanel, BoxLayout.Y_AXIS));
+                        qrInfoPanel.setOpaque(false);
+                        JLabel amountLabel = new JLabel(String.format("Amount: ₹%,.2f", totalSalary));
+                        amountLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+                        amountLabel.setForeground(new Color(40, 100, 60));
+                        amountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                        JLabel empLabel = new JLabel(name + " (" + employeeId + ")");
+                        empLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+                        empLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                        qrLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                        qrLabel.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
+                            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                        ));
+                        qrInfoPanel.add(Box.createVerticalStrut(10));
+                        qrInfoPanel.add(amountLabel);
+                        qrInfoPanel.add(Box.createVerticalStrut(5));
+                        qrInfoPanel.add(empLabel);
+                        qrInfoPanel.add(Box.createVerticalStrut(15));
+                        qrInfoPanel.add(qrLabel);
+                        qrInfoPanel.add(Box.createVerticalStrut(10));
+                        JSeparator sep = new JSeparator();
+                        sep.setMaximumSize(new Dimension(300, 1));
+                        qrInfoPanel.add(sep);
+                        dialogPanel.add(qrInfoPanel, BorderLayout.CENTER);
+                        // Pay button
+                        JButton payButton = new JButton("Pay");
+                        payButton.setBackground(new Color(60, 179, 113));
+                        payButton.setForeground(Color.WHITE);
+                        payButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                        payButton.setFocusPainted(false);
+                        payButton.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
+                        payButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                        payButton.addMouseListener(new java.awt.event.MouseAdapter() {
+                            public void mouseEntered(java.awt.event.MouseEvent e) {
+                                payButton.setBackground(new Color(50, 150, 90));
+                            }
+                            public void mouseExited(java.awt.event.MouseEvent e) {
+                                payButton.setBackground(new Color(60, 179, 113));
+                            }
+                        });
+                        payButton.addActionListener(new ActionListener() {
+                            public void actionPerformed(ActionEvent e) {
+                                // Prompt for PIN
+                                String pin = JOptionPane.showInputDialog(payDialog, "Enter PIN to confirm payment:", "PIN Required", JOptionPane.PLAIN_MESSAGE);
+                                if (pin != null && pin.equals("1234")) {
+                                    // Mark as paid (set total_salary to 0)
+                                    try {
+                                        Connection con = DBConnection.getConnection();
+                                        String updateQuery = "UPDATE salary_calculations SET total_salary = 0 WHERE employee_id = ? AND month = ? AND year = ?";
+                                        PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+                                        updateStmt.setString(1, employeeId);
+                                        updateStmt.setInt(2, month);
+                                        updateStmt.setInt(3, year);
+                                        updateStmt.executeUpdate();
+                                        // Optionally, insert into salary_payments
+                                        String insertPayment = "INSERT INTO salary_payments (employee_id, payment_date, amount) VALUES (?, CURDATE(), ?)";
+                                        PreparedStatement payStmt = con.prepareStatement(insertPayment);
+                                        payStmt.setString(1, employeeId);
+                                        payStmt.setDouble(2, totalSalary);
+                                        payStmt.executeUpdate();
+                                        JOptionPane.showMessageDialog(panel, "Payment complete!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                                        payDialog.dispose();
+                                        loadPendingSalaries(model);
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                        JOptionPane.showMessageDialog(panel, "Error updating payment: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                                    }
+                                } else if (pin != null) {
+                                    JOptionPane.showMessageDialog(payDialog, "Incorrect PIN. Payment not processed.", "Error", JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        });
+                        JPanel btnPanel = new JPanel();
+                        btnPanel.setOpaque(false);
+                        btnPanel.add(payButton);
+                        dialogPanel.add(btnPanel, BorderLayout.SOUTH);
+                        payDialog.setContentPane(dialogPanel);
+                        payDialog.setVisible(true);
+                    }
+                }
+            }
+        });
+
+        table.getSelectionModel().addListSelectionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow >= 0) {
+                String totalSalaryStr = (String) model.getValueAt(selectedRow, 4);
+                double totalSalary = Double.parseDouble(totalSalaryStr.replaceAll("[^0-9.]", ""));
+                payBtn.setEnabled(totalSalary > 0);
+            } else {
+                payBtn.setEnabled(false);
+            }
+        });
+
+        buttonPanel.add(refreshBtn);
+        buttonPanel.add(payBtn);
+
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        loadPendingSalaries(model);
+
+        // Add custom table cell renderer for card style
+        table.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                if (isSelected) {
+                    c.setBackground(new Color(220, 240, 255));
+                } else {
+                    c.setBackground(Color.WHITE);
+                }
+                setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+                return c;
+            }
+        });
+
+        return panel;
+    }
+
+    private void loadPendingSalaries(DefaultTableModel model) {
+        model.setRowCount(0);
+        try {
+            Connection con = DBConnection.getConnection();
+            int currentMonth = java.time.LocalDate.now().getMonthValue();
+            int currentYear = java.time.LocalDate.now().getYear();
+            String query = "SELECT s.employee_id, e.full_name, s.month, s.year, s.total_salary FROM salary_calculations s JOIN employees e ON s.employee_id = e.employee_id WHERE s.total_salary > 0 AND s.month = ? AND s.year = ? ORDER BY s.total_salary DESC";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setInt(1, currentMonth);
+            pst.setInt(2, currentYear);
+            ResultSet rs = pst.executeQuery();
+            boolean hasData = false;
+            while (rs.next()) {
+                hasData = true;
+                Vector<Object> row = new Vector<>();
+                row.add(rs.getString("employee_id"));
+                row.add(rs.getString("full_name"));
+                row.add(rs.getInt("month"));
+                row.add(rs.getInt("year"));
+                row.add(String.format("₹%,.2f", rs.getDouble("total_salary")));
+                row.add("Pending");
+                model.addRow(row);
+            }
+            if (!hasData) {
+                statusBar.setText("No pending salaries found.");
+            } else {
+                statusBar.setText("Pending salaries loaded successfully.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error loading pending salaries: " + ex.getMessage());
+        }
+    }
+
+    // Add Salary History panel
+    private JPanel createSalaryHistoryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(240, 240, 245));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        String[] columnNames = {"Employee ID", "Name", "Payment Date", "Amount"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        JTable table = new JTable(model);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(70, 130, 180));
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        buttonPanel.setBackground(new Color(240, 240, 245));
+        JButton refreshBtn = createStyledButton("Refresh");
+        refreshBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                loadSalaryHistory(model);
+            }
+        });
+        buttonPanel.add(refreshBtn);
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        loadSalaryHistory(model);
+        return panel;
+    }
+    private void loadSalaryHistory(DefaultTableModel model) {
+        model.setRowCount(0);
+        try {
+            Connection con = DBConnection.getConnection();
+            String query = "SELECT p.employee_id, e.full_name, p.payment_date, p.amount FROM salary_payments p JOIN employees e ON p.employee_id = e.employee_id ORDER BY p.payment_date DESC";
+            PreparedStatement pst = con.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            boolean hasData = false;
+            while (rs.next()) {
+                hasData = true;
+                Vector<Object> row = new Vector<>();
+                row.add(rs.getString("employee_id"));
+                row.add(rs.getString("full_name"));
+                row.add(rs.getDate("payment_date") != null ? rs.getDate("payment_date").toString() : "");
+                row.add(String.format("₹%,.2f", rs.getDouble("amount")));
+                model.addRow(row);
+            }
+            if (!hasData) {
+                statusBar.setText("No salary payments found.");
+            } else {
+                statusBar.setText("Salary payment history loaded successfully.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error loading salary history: " + ex.getMessage());
+        }
     }
 
     // Main method to launch the AdminDashboard directly.

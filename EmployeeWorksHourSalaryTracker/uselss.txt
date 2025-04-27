@@ -1,2 +1,4 @@
 prompt for the help and issue resolve
 https://copilot.microsoft.com/chats/eyF46RBhtDnVgsZKcSenJ
+
+default pin 1234

@@ -19,6 +19,7 @@ public class WorkAssignmentDialog extends JDialog {
     private JLabel statusLabel;
     private int applicationId;
     private JFrame parent;
+    private String employeeIdFromEmployeeTab = null;
     
     public WorkAssignmentDialog(JFrame parent, int applicationId) {
         super(parent, "Assign Work", true);
@@ -31,6 +32,17 @@ public class WorkAssignmentDialog extends JDialog {
         
         initComponents();
         loadApplicationDetails();
+    }
+    
+    public WorkAssignmentDialog(JFrame parent, String employeeId) {
+        super(parent, "Assign Work", true);
+        this.parent = parent;
+        this.employeeIdFromEmployeeTab = employeeId;
+        setSize(500, 450);
+        setLocationRelativeTo(parent);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        initComponents();
+        statusLabel.setText("Assigning work to Employee ID: " + employeeId);
     }
     
     private void initComponents() {
@@ -256,26 +268,84 @@ public class WorkAssignmentDialog extends JDialog {
                 return;
             }
             
-            // Get employee ID from application
             Connection con = DBConnection.getConnection();
-            String employeeQuery = "SELECT employee_id FROM employees WHERE application_id = ?";
-            PreparedStatement employeeStmt = con.prepareStatement(employeeQuery);
-            employeeStmt.setInt(1, applicationId);
-            ResultSet employeeRs = employeeStmt.executeQuery();
-            
-            if (!employeeRs.next()) {
-                JOptionPane.showMessageDialog(this, "Employee record not found for this application.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+            String employeeId;
+            int applicationIdForInsert = -1;
+            if (employeeIdFromEmployeeTab != null) {
+                // Use the provided employeeId directly
+                employeeId = employeeIdFromEmployeeTab;
+            } else {
+                // Existing logic: get employeeId from applicationId
+                String getEmailQuery = "SELECT email FROM job_applications WHERE application_id = ?";
+                PreparedStatement getEmailStmt = con.prepareStatement(getEmailQuery);
+                getEmailStmt.setInt(1, applicationId);
+                ResultSet emailRs = getEmailStmt.executeQuery();
+                String email = null;
+                if (emailRs.next()) {
+                    email = emailRs.getString("email");
+                } else {
+                    JOptionPane.showMessageDialog(this, "No email found for this application.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                String employeeQuery = "SELECT employee_id FROM employees WHERE email = ?";
+                PreparedStatement employeeStmt = con.prepareStatement(employeeQuery);
+                employeeStmt.setString(1, email);
+                ResultSet employeeRs = employeeStmt.executeQuery();
+                if (!employeeRs.next()) {
+                    JOptionPane.showMessageDialog(this, "Employee record not found for this application.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                employeeId = employeeRs.getString("employee_id");
+                // Also get the application_id for the insert
+                applicationIdForInsert = applicationId;
             }
-            
-            String employeeId = employeeRs.getString("employee_id");
-            
+            // If assigning from Employees tab, try to find the latest application_id for this employee
+            if (employeeIdFromEmployeeTab != null) {
+                String findAppIdQuery = "SELECT application_id FROM job_applications WHERE email = (SELECT email FROM employees WHERE employee_id = ?) ORDER BY application_id DESC LIMIT 1";
+                PreparedStatement findAppIdStmt = con.prepareStatement(findAppIdQuery);
+                findAppIdStmt.setString(1, employeeIdFromEmployeeTab);
+                ResultSet appIdRs = findAppIdStmt.executeQuery();
+                if (appIdRs.next()) {
+                    applicationIdForInsert = appIdRs.getInt("application_id");
+                }
+                // If no job application found, create one automatically
+                if (applicationIdForInsert == -1) {
+                    // Get employee details
+                    String empDetailsQuery = "SELECT full_name, email FROM employees WHERE employee_id = ?";
+                    PreparedStatement empDetailsStmt = con.prepareStatement(empDetailsQuery);
+                    empDetailsStmt.setString(1, employeeIdFromEmployeeTab);
+                    ResultSet empDetailsRs = empDetailsStmt.executeQuery();
+                    String fullName = null;
+                    String email = null;
+                    if (empDetailsRs.next()) {
+                        fullName = empDetailsRs.getString("full_name");
+                        email = empDetailsRs.getString("email");
+                    }
+                    // Insert minimal job application
+                    if (fullName != null && email != null) {
+                        String insertAppQuery = "INSERT INTO job_applications (full_name, birthdate, work_experience, profile_pic, resume, interested_sector, email, gender, status) VALUES (?, CURDATE(), 0, '', '', '', ?, 'Other', 'approved')";
+                        PreparedStatement insertAppStmt = con.prepareStatement(insertAppQuery, Statement.RETURN_GENERATED_KEYS);
+                        insertAppStmt.setString(1, fullName);
+                        insertAppStmt.setString(2, email);
+                        insertAppStmt.executeUpdate();
+                        ResultSet genKeys = insertAppStmt.getGeneratedKeys();
+                        if (genKeys.next()) {
+                            applicationIdForInsert = genKeys.getInt(1);
+                        }
+                    }
+                }
+                // If still not found, show error
+                if (applicationIdForInsert == -1) {
+                    JOptionPane.showMessageDialog(this, "No job application found or could be created for this employee. Cannot assign work.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
             // Insert work assignment
             String insertQuery = "INSERT INTO work_assignments (application_id, employee_id, work_type, hours, hourly_rate, start_date, end_date, description, status) " +
                                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')";
             
             PreparedStatement insertStmt = con.prepareStatement(insertQuery);
-            insertStmt.setInt(1, applicationId);
+            insertStmt.setInt(1, applicationIdForInsert);
             insertStmt.setString(2, employeeId);
             insertStmt.setString(3, (String) workTypeCombo.getSelectedItem());
             insertStmt.setInt(4, hours);
