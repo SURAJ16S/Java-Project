@@ -1,3 +1,11 @@
 @echo off
-java -cp "target/classes;lib/flatlaf-3.2.jar;lib/mysql-connector-j-9.3.0.jar;lib/protobuf-java-3.21.9.jar" com.company.main.Main
+echo Building the project...
+call mvn clean install
+
+echo Copying dependencies...
+call mvn dependency:copy-dependencies -DoutputDirectory=lib
+
+echo Running the application...
+java -cp "target/classes;lib/*" com.company.main.Main
+
 pause 

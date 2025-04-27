@@ -40,10 +40,21 @@ public class EmployeeDashboard extends JFrame {
         // Employee info panel
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         infoPanel.setBackground(new Color(240, 240, 245));
-        JLabel welcomeLabel = new JLabel("Welcome, " + employeeId);
-        welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        welcomeLabel.setForeground(new Color(70, 70, 70));
-        infoPanel.add(welcomeLabel);
+        try {
+            Connection con = DBConnection.getConnection();
+            String query = "SELECT full_name FROM employees WHERE employee_id = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setString(1, employeeId);
+            ResultSet rs = pst.executeQuery();
+            if (rs.next()) {
+                JLabel welcomeLabel = new JLabel("Welcome, " + rs.getString("full_name"));
+                welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                welcomeLabel.setForeground(new Color(70, 70, 70));
+                infoPanel.add(welcomeLabel);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         headerPanel.add(infoPanel, BorderLayout.CENTER);
         
         mainPanel.add(headerPanel, BorderLayout.NORTH);
@@ -130,11 +141,31 @@ public class EmployeeDashboard extends JFrame {
     private void clockInOut() {
         try {
             Connection con = DBConnection.getConnection();
-            String query = "INSERT INTO attendance (employee_id, clock_time) VALUES (?, NOW())";
-            PreparedStatement pst = con.prepareStatement(query);
-            pst.setString(1, employeeId);
-            pst.executeUpdate();
-            statusBar.setText("Clock in/out recorded successfully!");
+            
+            // Check if there's already a record for today
+            String checkQuery = "SELECT * FROM attendance WHERE employee_id = ? AND work_date = CURDATE()";
+            PreparedStatement checkStmt = con.prepareStatement(checkQuery);
+            checkStmt.setString(1, employeeId);
+            ResultSet rs = checkStmt.executeQuery();
+            
+            if (rs.next()) {
+                // Update end time and calculate working hours
+                String updateQuery = "UPDATE attendance SET end_time = NOW(), " +
+                                   "working_hours = TIMESTAMPDIFF(HOUR, start_time, NOW()) " +
+                                   "WHERE employee_id = ? AND work_date = CURDATE()";
+                PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+                updateStmt.setString(1, employeeId);
+                updateStmt.executeUpdate();
+                statusBar.setText("Clock out recorded successfully!");
+            } else {
+                // Insert new clock in record
+                String insertQuery = "INSERT INTO attendance (employee_id, work_date, shift_type, start_time) " +
+                                   "VALUES (?, CURDATE(), 'Regular', NOW())";
+                PreparedStatement insertStmt = con.prepareStatement(insertQuery);
+                insertStmt.setString(1, employeeId);
+                insertStmt.executeUpdate();
+                statusBar.setText("Clock in recorded successfully!");
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error recording clock in/out: " + ex.getMessage());
@@ -144,16 +175,20 @@ public class EmployeeDashboard extends JFrame {
     private void viewAttendance() {
         try {
             Connection con = DBConnection.getConnection();
-            String query = "SELECT DATE(clock_time) as date, TIME(clock_time) as time FROM attendance WHERE employee_id = ? ORDER BY clock_time DESC";
+            String query = "SELECT work_date, shift_type, start_time, end_time, working_hours " +
+                          "FROM attendance WHERE employee_id = ? ORDER BY work_date DESC, start_time DESC";
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, employeeId);
             ResultSet rs = pst.executeQuery();
             
             StringBuilder sb = new StringBuilder();
             while (rs.next()) {
-                sb.append("Date: ").append(rs.getDate("date"))
-                  .append(" Time: ").append(rs.getTime("time"))
-                  .append("\n");
+                sb.append("Date: ").append(rs.getDate("work_date"))
+                  .append("\nShift: ").append(rs.getString("shift_type"))
+                  .append("\nStart: ").append(rs.getTime("start_time"))
+                  .append("\nEnd: ").append(rs.getTime("end_time") != null ? rs.getTime("end_time") : "Not clocked out")
+                  .append("\nHours: ").append(rs.getDouble("working_hours") != 0 ? rs.getDouble("working_hours") : "In progress")
+                  .append("\n\n");
             }
             
             JTextArea textArea = new JTextArea(sb.toString());
@@ -172,7 +207,7 @@ public class EmployeeDashboard extends JFrame {
     private void viewSalary() {
         try {
             Connection con = DBConnection.getConnection();
-            String query = "SELECT amount, payment_date FROM salary_payments WHERE employee_id = ? ORDER BY payment_date DESC";
+            String query = "SELECT payment_date, amount FROM salary_payments WHERE employee_id = ? ORDER BY payment_date DESC";
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, employeeId);
             ResultSet rs = pst.executeQuery();
@@ -180,8 +215,8 @@ public class EmployeeDashboard extends JFrame {
             StringBuilder sb = new StringBuilder();
             while (rs.next()) {
                 sb.append("Date: ").append(rs.getDate("payment_date"))
-                  .append(" Amount: ₹").append(rs.getDouble("amount"))
-                  .append("\n");
+                  .append("\nAmount: ₹").append(rs.getDouble("amount"))
+                  .append("\n\n");
             }
             
             JTextArea textArea = new JTextArea(sb.toString());
