@@ -138,8 +138,6 @@ Employee Works Hour & Salary Tracker is a robust Java Swing application for HR a
 - `QRCodeGenerator` (if used for employee QR codes)
     
 
-> **Maven Dependencies:** Refer to the `README.md` section for details.
-
 ## Database Schema
 
 The application uses a MySQL database named `EmployeeDB`. Key tables include:
@@ -161,23 +159,23 @@ The application uses a MySQL database named `EmployeeDB`. Key tables include:
 
 ## Setup & Installation
 
-1. **Clone the Repository** > _Apply instructions in README.md.._
+1. **Clone the Repository** Follow the instructions in the repository to clone the project.
     
 2. **Set Up the Database**
     
-    - **Install MySQL and Create a Database:** > _Apply instructions in README.md.._
+    - **Install MySQL and Create a Database:** Follow your MySQL installation guidelines to create the required database.
         
-    - **Import the Schema:** > _Apply instructions in README.md.._
+    - **Import the Schema:** Import the provided schema file to set up required tables and sample data.
         
-    - _(Optional)_ Update MySQL credentials in `DBConnection.java` if needed.
+    - _(Optional)_ Update MySQL credentials in `DBConnection.java` if necessary.
         
-3. **Build the Project** > _Apply instructions in README.md.._
+3. **Build the Project** Use Maven to build the project as outlined in the repository instructions.
     
 4. **Run the Application**
     
-    - **Option 1: From Maven** > _Apply instructions in README.md.._
+    - **Option 1:** Run from Maven.
         
-    - **Option 2: From JAR** > _Apply instructions in README.md.._
+    - **Option 2:** Run using the executable JAR file.
         
     
     > **Note:** On Unix/Mac, use `:` instead of `;` in the classpath.
@@ -189,74 +187,57 @@ The application uses a MySQL database named `EmployeeDB`. Key tables include:
     
     - **Default Admin Credentials:**
         
-        - **Username:** admin
+        - **Username:** `admin`
             
-        - **Password:** admin123
+        - **Password:** `admin123`
             
-- **Admin Dashboard:** Manage job applications, employees, attendance, and salary.
+- **Admin Dashboard:** Manage job applications, employee records, attendance, and salary entries.
     
-- **Job Application:** Candidates can apply using the application form.
+- **Job Application:** Candidates can apply for jobs through the application form.
     
-- **Approve & Assign Work:** Admins can approve job applications and assign work to selected candidates.
+- **Approve & Assign Work:** Admins can review applications, approve candidates, and assign tasks accordingly.
     
-- **Employee Dashboard:** Employees can view their assignments, attendance, and detailed salary information.
+- **Employee Dashboard:** Employees can view their assignments, attendance records, and detailed salary breakdowns.
     
 
 ## Project Structure
 
-`EmployeeWorksHour&SalaryTracker/`
-`├── pom.xml`
-`├── README.md`
-`├── run.bat`
-`├── sources.txt`
-`│`
-`├── docs/                      // Any project documentation`
-`│`
-`├── lib/                       // Required external libraries (JARs)`
-`│   ├── core-3.5.2.jar`
-`│   ├── flatlaf-3.2.jar`
-`│   ├── jai-imageio-core-1.4.0.jar`
-`│   ├── javase-3.5.2.jar`
-`│   ├── jcommander-1.82.jar`
-`│   ├── mysql-connector-j-8.0.33.jar`
-`│   ├── mysql-connector-j-9.3.0.jar`
-`│   └── protobuf-java-3.21.9.jar`
-`│`
-`├── src/                       // All project source files`
-`│   └── com/`
-`│       └── company/`
-`│           ├── database/`
-`│           │   ├── DBConnection.java`
-`│           │   ├── Queries.java`
-`│           │   └── schema.sql`
-`│           │`
-`│           ├── gui/`
-`│           │   ├── AdminDashboard.java`
-`│           │   ├── ApplicationForm.java`
-`│           │   ├── DeveloperDashboard.java`
-`│           │   ├── EmployeeDashboard.java`
-`│           │   ├── HomeFrame.java`
-`│           │   ├── JobAllocationPanel.java`
-`│           │   ├── JobApplicationForm.java`
-`│           │   ├── LoginFrame.java`
-`│           │   ├── RegisterForm.java`
-`│           │   └── WorkAssignmentDialog.java`
-`│           │`
-`│           ├── main/`
-`│           │   └── Main.java`
-`│           │`
-`│           └── utils/`
-`│               └── QRCodeGenerator.java`
-`│`
-`├── target/                    // Build output (compiled classes, packaged JAR, etc.)`
-`│   └── EmployeeWorksHourSalaryTracker-1.0-SNAPSHOT.jar`
-`│`
-`└── uploads/                   // Any uploaded resources (images, PDFs, etc.)`
-    `├── uploadedfile.ext`
-    `├── uploadedfile.ext`
-    `├── uploadedfile.ext`
-    `└── uploadedfile.ext`
+plaintext
 
+```
+EmployeeWorksHour&SalaryTracker/
+├── pom.xml
+├── README.md
+├── run.bat
+├── sources.txt
+│
+├── docs/                      // Project documentation
+│
+├── lib/                       // External libraries (JARs)
+│   ├── flatlaf-3.2.jar
+│   ├── mysql-connector-j-8.0.33.jar
+│   ├── protobuf-java-3.21.9.jar
+│   └── other-library.jar
+│
+├── src/                       // Source code
+│   └── com/
+│       └── company/
+│           ├── database/
+│           │   ├── DBConnection.java
+│           │   ├── Queries.java
+│           │   └── schema.sql
+│           ├── gui/
+│           │   ├── AdminDashboard.java
+│           │   ├── LoginFrame.java
+│           │   └── other-UI-file.java
+│           ├── utils/
+│           │   └── QRCodeGenerator.java
+│           └── main/
+│               └── Main.java
+│
+├── target/                    // Compiled output
+└── uploads/                   // Uploaded files
+```
 
 ## Contributing
 
@@ -270,9 +251,9 @@ This project is licensed under the MIT License.
 
 - FlatLaf for the modern Java look and feel.
     
-- MySQL for the database.
+- MySQL for reliable database management.
     
-- Thanks to all contributors and open-source libraries used in this project.
+- Special thanks to all contributors and open-source libraries used.
     
 
 For any questions or support, please open an issue on GitHub.
