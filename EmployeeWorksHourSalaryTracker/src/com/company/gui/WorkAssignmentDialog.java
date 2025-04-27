@@ -5,32 +5,36 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Vector;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 public class WorkAssignmentDialog extends JDialog {
+    private JTextField hoursField;
+    private JTextField hourlyRateField;
+    private JComboBox<String> workTypeCombo;
+    private JSpinner startDateSpinner;
+    private JSpinner endDateSpinner;
+    private JTextArea descriptionArea;
     private JLabel statusLabel;
     private int applicationId;
-    private JComboBox<String> workTypeCombo;
-    private JTextField hourlyRateField;
-    private JTextField hoursField;
-    private JTextField startDateField;
-    private JTextField endDateField;
+    private JFrame parent;
     
     public WorkAssignmentDialog(JFrame parent, int applicationId) {
         super(parent, "Assign Work", true);
+        this.parent = parent;
         this.applicationId = applicationId;
+        
+        setSize(500, 450);
+        setLocationRelativeTo(parent);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        
         initComponents();
         loadApplicationDetails();
     }
     
     private void initComponents() {
-        setSize(500, 400);
-        setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(10, 10));
-        
-        // Main panel with padding
+        // Main panel with a nice background
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBackground(new Color(240, 240, 245));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -44,70 +48,127 @@ public class WorkAssignmentDialog extends JDialog {
         ));
         
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        
-        // Work Type
         gbc.gridx = 0;
         gbc.gridy = 0;
-        formPanel.add(new JLabel("Work Type:"), gbc);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(5, 5, 5, 10);
+        
+        // Work Type
+        JLabel workTypeLabel = new JLabel("Work Type:");
+        workTypeLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(workTypeLabel, gbc);
         
         gbc.gridx = 1;
-        workTypeCombo = new JComboBox<>(new String[]{"fulltime", "nighttime", "extra", "hourly"});
-        workTypeCombo.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                updateFieldsVisibility();
-            }
-        });
+        gbc.weightx = 1.0;
+        workTypeCombo = new JComboBox<>(new String[]{"Full-time", "Part-time", "Contract", "Project-based"});
+        workTypeCombo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         formPanel.add(workTypeCombo, gbc);
-        
-        // Hourly Rate
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        formPanel.add(new JLabel("Hourly Rate (₹):"), gbc);
-        
-        gbc.gridx = 1;
-        hourlyRateField = new JTextField(15);
-        formPanel.add(hourlyRateField, gbc);
         
         // Hours
         gbc.gridx = 0;
-        gbc.gridy = 2;
-        formPanel.add(new JLabel("Hours:"), gbc);
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel hoursLabel = new JLabel("Hours per Week:");
+        hoursLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(hoursLabel, gbc);
         
         gbc.gridx = 1;
-        hoursField = new JTextField(15);
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        hoursField = new JTextField();
+        hoursField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         formPanel.add(hoursField, gbc);
+        
+        // Hourly Rate
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel rateLabel = new JLabel("Hourly Rate (₹):");
+        rateLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(rateLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        hourlyRateField = new JTextField();
+        hourlyRateField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        formPanel.add(hourlyRateField, gbc);
         
         // Start Date
         gbc.gridx = 0;
-        gbc.gridy = 3;
-        formPanel.add(new JLabel("Start Date:"), gbc);
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        JLabel startDateLabel = new JLabel("Start Date:");
+        startDateLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(startDateLabel, gbc);
         
         gbc.gridx = 1;
-        startDateField = new JTextField(15);
-        startDateField.setText(LocalDate.now().format(DateTimeFormatter.ISO_DATE));
-        formPanel.add(startDateField, gbc);
+        gbc.weightx = 1.0;
+        SpinnerDateModel startDateModel = new SpinnerDateModel();
+        startDateSpinner = new JSpinner(startDateModel);
+        JSpinner.DateEditor startDateEditor = new JSpinner.DateEditor(startDateSpinner, "yyyy-MM-dd");
+        startDateSpinner.setEditor(startDateEditor);
+        startDateSpinner.setValue(new Date());
+        formPanel.add(startDateSpinner, gbc);
         
         // End Date
         gbc.gridx = 0;
-        gbc.gridy = 4;
-        formPanel.add(new JLabel("End Date:"), gbc);
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        JLabel endDateLabel = new JLabel("End Date:");
+        endDateLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(endDateLabel, gbc);
         
         gbc.gridx = 1;
-        endDateField = new JTextField(15);
-        formPanel.add(endDateField, gbc);
+        gbc.weightx = 1.0;
+        SpinnerDateModel endDateModel = new SpinnerDateModel();
+        endDateSpinner = new JSpinner(endDateModel);
+        JSpinner.DateEditor endDateEditor = new JSpinner.DateEditor(endDateSpinner, "yyyy-MM-dd");
+        endDateSpinner.setEditor(endDateEditor);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.MONTH, 3); // Default to 3 months
+        endDateSpinner.setValue(cal.getTime());
+        formPanel.add(endDateSpinner, gbc);
+        
+        // Description
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel descLabel = new JLabel("Description:");
+        descLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        formPanel.add(descLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        descriptionArea = new JTextArea(5, 30);
+        descriptionArea.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+        JScrollPane descScrollPane = new JScrollPane(descriptionArea);
+        formPanel.add(descScrollPane, gbc);
+        
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+        
+        // Status label
+        statusLabel = new JLabel(" ");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(new Color(100, 100, 100));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.add(statusLabel, BorderLayout.NORTH);
         
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         buttonPanel.setBackground(new Color(240, 240, 245));
-        
-        JButton assignBtn = createStyledButton("Assign Work");
-        assignBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                assignWork();
-            }
-        });
         
         JButton cancelBtn = createStyledButton("Cancel");
         cancelBtn.addActionListener(new ActionListener() {
@@ -116,49 +177,44 @@ public class WorkAssignmentDialog extends JDialog {
             }
         });
         
-        buttonPanel.add(assignBtn);
+        JButton assignBtn = createStyledButton("Assign Work");
+        assignBtn.setBackground(new Color(60, 179, 113)); // Green color
+        assignBtn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                assignBtn.setBackground(new Color(50, 150, 90));
+            }
+            public void mouseExited(MouseEvent e) {
+                assignBtn.setBackground(new Color(60, 179, 113));
+            }
+        });
+        assignBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                assignWork();
+            }
+        });
+        
         buttonPanel.add(cancelBtn);
+        buttonPanel.add(assignBtn);
         
-        // Status label
-        statusLabel = new JLabel(" ");
-        statusLabel.setForeground(new Color(100, 100, 100));
-        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
-        // Add components to main panel
-        mainPanel.add(formPanel, BorderLayout.CENTER);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         add(mainPanel);
-        
-        // Initial field visibility update
-        updateFieldsVisibility();
-    }
-    
-    private void updateFieldsVisibility() {
-        String selectedType = (String) workTypeCombo.getSelectedItem();
-        boolean isHourly = "hourly".equals(selectedType);
-        boolean isExtra = "extra".equals(selectedType);
-        
-        hourlyRateField.setEnabled(isHourly || isExtra);
-        hoursField.setEnabled(isHourly || isExtra);
     }
     
     private void loadApplicationDetails() {
         try {
             Connection con = DBConnection.getConnection();
-            String query = "SELECT * FROM job_applications WHERE application_id = ?";
+            String query = "SELECT full_name, email, interested_sector FROM job_applications WHERE application_id = ?";
             PreparedStatement pst = con.prepareStatement(query);
             pst.setInt(1, applicationId);
             ResultSet rs = pst.executeQuery();
             
             if (rs.next()) {
-                // Set default hourly rate based on sector
+                String name = rs.getString("full_name");
+                String email = rs.getString("email");
                 String sector = rs.getString("interested_sector");
-                double defaultRate = getDefaultHourlyRate(sector);
-                hourlyRateField.setText(String.valueOf(defaultRate));
                 
-                // Set default hours based on work type
-                hoursField.setText("8"); // Default 8 hours
+                statusLabel.setText("Assigning work to: " + name + " (" + email + ") - " + sector);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -166,56 +222,69 @@ public class WorkAssignmentDialog extends JDialog {
         }
     }
     
-    private double getDefaultHourlyRate(String sector) {
-        switch (sector.toLowerCase()) {
-            case "development":
-                return 500.0;
-            case "design":
-                return 450.0;
-            case "testing":
-                return 400.0;
-            case "management":
-                return 600.0;
-            default:
-                return 400.0;
-        }
-    }
-    
     private void assignWork() {
+        // Validate inputs
+        if (hoursField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter hours per week.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (hourlyRateField.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter hourly rate.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         try {
-            // Validate inputs
-            if (!validateInputs()) {
+            int hours = Integer.parseInt(hoursField.getText().trim());
+            double hourlyRate = Double.parseDouble(hourlyRateField.getText().trim());
+            
+            if (hours <= 0) {
+                JOptionPane.showMessageDialog(this, "Hours must be greater than zero.", "Validation Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             
-            Connection con = DBConnection.getConnection();
+            if (hourlyRate <= 0) {
+                JOptionPane.showMessageDialog(this, "Hourly rate must be greater than zero.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            Date startDate = (Date) startDateSpinner.getValue();
+            Date endDate = (Date) endDateSpinner.getValue();
+            
+            if (endDate.before(startDate)) {
+                JOptionPane.showMessageDialog(this, "End date must be after start date.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             
             // Get employee ID from application
+            Connection con = DBConnection.getConnection();
             String employeeQuery = "SELECT employee_id FROM employees WHERE application_id = ?";
-            PreparedStatement empStmt = con.prepareStatement(employeeQuery);
-            empStmt.setInt(1, applicationId);
-            ResultSet empRs = empStmt.executeQuery();
+            PreparedStatement employeeStmt = con.prepareStatement(employeeQuery);
+            employeeStmt.setInt(1, applicationId);
+            ResultSet employeeRs = employeeStmt.executeQuery();
             
-            if (!empRs.next()) {
-                statusLabel.setText("Error: No employee found for this application.");
+            if (!employeeRs.next()) {
+                JOptionPane.showMessageDialog(this, "Employee record not found for this application.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             
-            String employeeId = empRs.getString("employee_id");
+            String employeeId = employeeRs.getString("employee_id");
             
             // Insert work assignment
-            String insertQuery = "INSERT INTO work_assignments (application_id, employee_id, work_type, " +
-                               "hours, hourly_rate, start_date, end_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')";
-            PreparedStatement pst = con.prepareStatement(insertQuery);
-            pst.setInt(1, applicationId);
-            pst.setString(2, employeeId);
-            pst.setString(3, (String) workTypeCombo.getSelectedItem());
-            pst.setDouble(4, Double.parseDouble(hoursField.getText()));
-            pst.setDouble(5, Double.parseDouble(hourlyRateField.getText()));
-            pst.setDate(6, java.sql.Date.valueOf(startDateField.getText()));
-            pst.setDate(7, endDateField.getText().isEmpty() ? null : java.sql.Date.valueOf(endDateField.getText()));
+            String insertQuery = "INSERT INTO work_assignments (application_id, employee_id, work_type, hours, hourly_rate, start_date, end_date, description, status) " +
+                               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')";
             
-            pst.executeUpdate();
+            PreparedStatement insertStmt = con.prepareStatement(insertQuery);
+            insertStmt.setInt(1, applicationId);
+            insertStmt.setString(2, employeeId);
+            insertStmt.setString(3, (String) workTypeCombo.getSelectedItem());
+            insertStmt.setInt(4, hours);
+            insertStmt.setDouble(5, hourlyRate);
+            insertStmt.setDate(6, new java.sql.Date(startDate.getTime()));
+            insertStmt.setDate(7, new java.sql.Date(endDate.getTime()));
+            insertStmt.setString(8, descriptionArea.getText().trim());
+            
+            insertStmt.executeUpdate();
             
             JOptionPane.showMessageDialog(this, 
                 "Work assigned successfully!", 
@@ -223,60 +292,15 @@ public class WorkAssignmentDialog extends JDialog {
             
             dispose();
             
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Please enter valid numbers for hours and hourly rate.", 
+                "Validation Error", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusLabel.setText("Error assigning work: " + ex.getMessage());
-        }
-    }
-    
-    private boolean validateInputs() {
-        try {
-            // Validate work type
-            if (workTypeCombo.getSelectedItem() == null) {
-                statusLabel.setText("Please select a work type.");
-                return false;
-            }
-            
-            // Validate hourly rate and hours for hourly/extra work
-            String selectedType = (String) workTypeCombo.getSelectedItem();
-            if ("hourly".equals(selectedType) || "extra".equals(selectedType)) {
-                if (hourlyRateField.getText().isEmpty()) {
-                    statusLabel.setText("Please enter hourly rate.");
-                    return false;
-                }
-                if (hoursField.getText().isEmpty()) {
-                    statusLabel.setText("Please enter hours.");
-                    return false;
-                }
-                try {
-                    double rate = Double.parseDouble(hourlyRateField.getText());
-                    double hours = Double.parseDouble(hoursField.getText());
-                    if (rate <= 0 || hours <= 0) {
-                        statusLabel.setText("Hourly rate and hours must be greater than 0.");
-                        return false;
-                    }
-                } catch (NumberFormatException e) {
-                    statusLabel.setText("Invalid number format for rate or hours.");
-                    return false;
-                }
-            }
-            
-            // Validate dates
-            try {
-                LocalDate.parse(startDateField.getText());
-                if (!endDateField.getText().isEmpty()) {
-                    LocalDate.parse(endDateField.getText());
-                }
-            } catch (Exception e) {
-                statusLabel.setText("Invalid date format. Use YYYY-MM-DD.");
-                return false;
-            }
-            
-            return true;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            statusLabel.setText("Error validating inputs: " + ex.getMessage());
-            return false;
+            JOptionPane.showMessageDialog(this, 
+                "Error assigning work: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     

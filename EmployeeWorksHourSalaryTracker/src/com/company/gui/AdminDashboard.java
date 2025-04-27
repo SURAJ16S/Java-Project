@@ -11,6 +11,8 @@ import java.sql.*;
 import java.awt.image.BufferedImage;
 import javax.swing.table.DefaultTableModel;
 import java.util.Vector;
+import java.io.File;
+import java.awt.Desktop;
 
 public class AdminDashboard extends JFrame {
   
@@ -231,6 +233,38 @@ public class AdminDashboard extends JFrame {
             }
         });
         
+        JButton approveBtn = createStyledButton("Approve");
+        approveBtn.setBackground(new Color(60, 179, 113)); // Green color for approve
+        approveBtn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                approveBtn.setBackground(new Color(50, 150, 90));
+            }
+            public void mouseExited(MouseEvent e) {
+                approveBtn.setBackground(new Color(60, 179, 113));
+            }
+        });
+        approveBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    int applicationId = (int) model.getValueAt(selectedRow, 0);
+                    String currentStatus = (String) model.getValueAt(selectedRow, 5);
+                    
+                    if (currentStatus.equals("pending")) {
+                        approveApplication(applicationId, model, selectedRow);
+                    } else {
+                        JOptionPane.showMessageDialog(AdminDashboard.this, 
+                            "Only pending applications can be approved.", 
+                            "Invalid Action", JOptionPane.WARNING_MESSAGE);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(AdminDashboard.this, 
+                        "Please select an application to approve.", 
+                        "No Selection", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        
         JButton assignWorkBtn = createStyledButton("Assign Work");
         assignWorkBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -255,6 +289,7 @@ public class AdminDashboard extends JFrame {
         
         buttonPanel.add(refreshBtn);
         buttonPanel.add(viewDetailsBtn);
+        buttonPanel.add(approveBtn);
         buttonPanel.add(assignWorkBtn);
         
         panel.add(buttonPanel, BorderLayout.NORTH);
@@ -294,6 +329,53 @@ public class AdminDashboard extends JFrame {
         }
     }
     
+    private void approveApplication(int applicationId, DefaultTableModel model, int selectedRow) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Update application status to approved
+            String updateQuery = "UPDATE job_applications SET status = 'approved' WHERE application_id = ?";
+            PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+            updateStmt.setInt(1, applicationId);
+            updateStmt.executeUpdate();
+            
+            // Create employee record
+            String insertQuery = "INSERT INTO employees (employee_id, full_name, email) " +
+                               "SELECT CONCAT('EMP', LPAD(?, 3, '0')), full_name, email " +
+                               "FROM job_applications WHERE application_id = ?";
+            
+            // Get the next employee ID
+            String countQuery = "SELECT COUNT(*) FROM employees";
+            PreparedStatement countStmt = con.prepareStatement(countQuery);
+            ResultSet countRs = countStmt.executeQuery();
+            int nextId = 1;
+            if (countRs.next()) {
+                nextId = countRs.getInt(1) + 1;
+            }
+            
+            PreparedStatement insertStmt = con.prepareStatement(insertQuery);
+            insertStmt.setInt(1, nextId);
+            insertStmt.setInt(2, applicationId);
+            insertStmt.executeUpdate();
+            
+            // Update the table model
+            model.setValueAt("approved", selectedRow, 5);
+            
+            statusBar.setText("Application approved successfully. Employee record created.");
+            
+            JOptionPane.showMessageDialog(this, 
+                "Application approved successfully. Employee record created.", 
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+                
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error approving application: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error approving application: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
     private void viewApplicationDetails(int applicationId) {
         try {
             Connection con = DBConnection.getConnection();
@@ -303,35 +385,165 @@ public class AdminDashboard extends JFrame {
             ResultSet rs = pst.executeQuery();
             
             if (rs.next()) {
-                StringBuilder details = new StringBuilder();
-                details.append("<html><body style='font-family: Segoe UI;'>");
-                details.append("<h2>Application Details</h2>");
-                details.append("<p><b>ID:</b> ").append(rs.getInt("application_id")).append("</p>");
-                details.append("<p><b>Name:</b> ").append(rs.getString("full_name")).append("</p>");
-                details.append("<p><b>Email:</b> ").append(rs.getString("email")).append("</p>");
-                details.append("<p><b>Birthdate:</b> ").append(rs.getDate("birthdate")).append("</p>");
-                details.append("<p><b>Experience:</b> ").append(rs.getInt("work_experience")).append(" years</p>");
-                details.append("<p><b>Gender:</b> ").append(rs.getString("gender")).append("</p>");
-                details.append("<p><b>Sector:</b> ").append(rs.getString("interested_sector")).append("</p>");
-                details.append("<p><b>Status:</b> ").append(rs.getString("status")).append("</p>");
-                details.append("<p><b>Profile Picture:</b> ").append(rs.getString("profile_pic")).append("</p>");
-                details.append("<p><b>Resume:</b> ").append(rs.getString("resume")).append("</p>");
-                details.append("</body></html>");
+                // Create a custom dialog for application details
+                JDialog detailsDialog = new JDialog(this, "Application Details", true);
+                detailsDialog.setSize(600, 500);
+                detailsDialog.setLocationRelativeTo(this);
                 
-                JTextPane textPane = new JTextPane();
-                textPane.setContentType("text/html");
-                textPane.setText(details.toString());
-                textPane.setEditable(false);
+                JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+                mainPanel.setBackground(new Color(240, 240, 245));
+                mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
                 
-                JScrollPane scrollPane = new JScrollPane(textPane);
-                scrollPane.setPreferredSize(new Dimension(500, 400));
+                // Header with name and status
+                JPanel headerPanel = new JPanel(new BorderLayout());
+                headerPanel.setBackground(new Color(240, 240, 245));
                 
-                JOptionPane.showMessageDialog(this, scrollPane, "Application Details", 
-                    JOptionPane.INFORMATION_MESSAGE);
+                JLabel nameLabel = new JLabel(rs.getString("full_name"));
+                nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+                nameLabel.setForeground(new Color(50, 50, 50));
+                headerPanel.add(nameLabel, BorderLayout.WEST);
+                
+                String status = rs.getString("status");
+                JLabel statusLabel = new JLabel(status.toUpperCase());
+                statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                if (status.equals("approved")) {
+                    statusLabel.setForeground(new Color(60, 179, 113)); // Green
+                } else if (status.equals("rejected")) {
+                    statusLabel.setForeground(new Color(180, 70, 70)); // Red
+                } else {
+                    statusLabel.setForeground(new Color(255, 140, 0)); // Orange
+                }
+                headerPanel.add(statusLabel, BorderLayout.EAST);
+                
+                mainPanel.add(headerPanel, BorderLayout.NORTH);
+                
+                // Content panel with details and files
+                JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
+                contentPanel.setBackground(Color.WHITE);
+                contentPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+                    BorderFactory.createEmptyBorder(15, 15, 15, 15)
+                ));
+                
+                // Details panel
+                JPanel detailsPanel = new JPanel(new GridBagLayout());
+                detailsPanel.setBackground(Color.WHITE);
+                
+                GridBagConstraints gbc = new GridBagConstraints();
+                gbc.gridx = 0;
+                gbc.gridy = 0;
+                gbc.anchor = GridBagConstraints.WEST;
+                gbc.insets = new Insets(5, 5, 5, 10);
+                
+                // Add details
+                addDetailRow(detailsPanel, "Email:", rs.getString("email"), gbc);
+                addDetailRow(detailsPanel, "Birthdate:", rs.getDate("birthdate").toString(), gbc);
+                addDetailRow(detailsPanel, "Experience:", rs.getInt("work_experience") + " years", gbc);
+                addDetailRow(detailsPanel, "Sector:", rs.getString("interested_sector"), gbc);
+                addDetailRow(detailsPanel, "Gender:", rs.getString("gender"), gbc);
+                
+                contentPanel.add(detailsPanel, BorderLayout.CENTER);
+                
+                // Files panel
+                JPanel filesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+                filesPanel.setBackground(Color.WHITE);
+                
+                String profilePic = rs.getString("profile_pic");
+                String resume = rs.getString("resume");
+                
+                if (profilePic != null && !profilePic.isEmpty()) {
+                    JButton viewPicBtn = createStyledButton("View Profile Picture");
+                    viewPicBtn.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            viewFile(profilePic, "Profile Picture");
+                        }
+                    });
+                    filesPanel.add(viewPicBtn);
+                }
+                
+                if (resume != null && !resume.isEmpty()) {
+                    JButton viewResumeBtn = createStyledButton("View Resume");
+                    viewResumeBtn.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            viewFile(resume, "Resume");
+                        }
+                    });
+                    filesPanel.add(viewResumeBtn);
+                }
+                
+                if (filesPanel.getComponentCount() > 0) {
+                    contentPanel.add(filesPanel, BorderLayout.SOUTH);
+                }
+                
+                mainPanel.add(contentPanel, BorderLayout.CENTER);
+                
+                // Button panel
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+                buttonPanel.setBackground(new Color(240, 240, 245));
+                
+                JButton closeBtn = createStyledButton("Close");
+                closeBtn.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        detailsDialog.dispose();
+                    }
+                });
+                
+                buttonPanel.add(closeBtn);
+                mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+                
+                detailsDialog.add(mainPanel);
+                detailsDialog.setVisible(true);
+                
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Application not found.", 
+                    "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error viewing application details: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error viewing application details: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void addDetailRow(JPanel panel, String label, String value, GridBagConstraints gbc) {
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.weightx = 0.0;
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        panel.add(lbl, gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JLabel val = new JLabel(value);
+        val.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        panel.add(val, gbc);
+    }
+    
+    private void viewFile(String filePath, String title) {
+        try {
+            File file = new File(filePath);
+            if (file.exists()) {
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().open(file);
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "Desktop operations are not supported on this system.", 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "File not found: " + filePath, 
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, 
+                "Error opening file: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
