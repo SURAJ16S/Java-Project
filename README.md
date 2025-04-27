@@ -204,58 +204,58 @@ The application uses a MySQL database named `EmployeeDB`. Key tables include:
 
 ## Project Structure
 
-EmployeeWorksHour&SalaryTracker/
-├── pom.xml
-├── README.md
-├── run.bat
-├── sources.txt
-│
-├── docs/                      // Any project documentation
-│
-├── lib/                       // Required external libraries (JARs)
-│   ├── core-3.5.2.jar
-│   ├── flatlaf-3.2.jar
-│   ├── jai-imageio-core-1.4.0.jar
-│   ├── javase-3.5.2.jar
-│   ├── jcommander-1.82.jar
-│   ├── mysql-connector-j-8.0.33.jar
-│   ├── mysql-connector-j-9.3.0.jar
-│   └── protobuf-java-3.21.9.jar
-│
-├── src/                       // All project source files
-│   └── com/
-│       └── company/
-│           ├── database/
-│           │   ├── DBConnection.java
-│           │   ├── Queries.java
-│           │   └── schema.sql
-│           │
-│           ├── gui/
-│           │   ├── AdminDashboard.java
-│           │   ├── ApplicationForm.java
-│           │   ├── DeveloperDashboard.java
-│           │   ├── EmployeeDashboard.java
-│           │   ├── HomeFrame.java
-│           │   ├── JobAllocationPanel.java
-│           │   ├── JobApplicationForm.java
-│           │   ├── LoginFrame.java
-│           │   ├── RegisterForm.java
-│           │   └── WorkAssignmentDialog.java
-│           │
-│           ├── main/
-│           │   └── Main.java
-│           │
-│           └── utils/
-│               └── QRCodeGenerator.java
-│
-├── target/                    // Build output (compiled classes, packaged JAR, etc.)
-│   └── EmployeeWorksHourSalaryTracker-1.0-SNAPSHOT.jar
-│
-└── uploads/                   // Any uploaded resources (images, PDFs, etc.)
-    ├── uploadedfile.ext
-    ├── uploadedfile.ext
-    ├── uploadedfile.ext
-    └── uploadedfile.ext
+`EmployeeWorksHour&SalaryTracker/`
+`├── pom.xml`
+`├── README.md`
+`├── run.bat`
+`├── sources.txt`
+`│`
+`├── docs/                      // Any project documentation`
+`│`
+`├── lib/                       // Required external libraries (JARs)`
+`│   ├── core-3.5.2.jar`
+`│   ├── flatlaf-3.2.jar`
+`│   ├── jai-imageio-core-1.4.0.jar`
+`│   ├── javase-3.5.2.jar`
+`│   ├── jcommander-1.82.jar`
+`│   ├── mysql-connector-j-8.0.33.jar`
+`│   ├── mysql-connector-j-9.3.0.jar`
+`│   └── protobuf-java-3.21.9.jar`
+`│`
+`├── src/                       // All project source files`
+`│   └── com/`
+`│       └── company/`
+`│           ├── database/`
+`│           │   ├── DBConnection.java`
+`│           │   ├── Queries.java`
+`│           │   └── schema.sql`
+`│           │`
+`│           ├── gui/`
+`│           │   ├── AdminDashboard.java`
+`│           │   ├── ApplicationForm.java`
+`│           │   ├── DeveloperDashboard.java`
+`│           │   ├── EmployeeDashboard.java`
+`│           │   ├── HomeFrame.java`
+`│           │   ├── JobAllocationPanel.java`
+`│           │   ├── JobApplicationForm.java`
+`│           │   ├── LoginFrame.java`
+`│           │   ├── RegisterForm.java`
+`│           │   └── WorkAssignmentDialog.java`
+`│           │`
+`│           ├── main/`
+`│           │   └── Main.java`
+`│           │`
+`│           └── utils/`
+`│               └── QRCodeGenerator.java`
+`│`
+`├── target/                    // Build output (compiled classes, packaged JAR, etc.)`
+`│   └── EmployeeWorksHourSalaryTracker-1.0-SNAPSHOT.jar`
+`│`
+`└── uploads/                   // Any uploaded resources (images, PDFs, etc.)`
+    `├── uploadedfile.ext`
+    `├── uploadedfile.ext`
+    `├── uploadedfile.ext`
+    `└── uploadedfile.ext`
 
 
 ## Contributing
