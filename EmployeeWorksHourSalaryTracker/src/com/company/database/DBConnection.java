@@ -3,6 +3,7 @@ package com.company.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -45,6 +46,8 @@ public class DBConnection {
             // Schedule connection cleanup
             scheduler.scheduleAtFixedRate(DBConnection::cleanupIdleConnections, 
                                          IDLE_TIMEOUT, IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+            
+            createTables();
             
             LOGGER.info("Database connection system initialized successfully.");
         } catch (ClassNotFoundException e) {
@@ -162,6 +165,108 @@ public class DBConnection {
             Thread.currentThread().interrupt();
         }
         LOGGER.info("Database connection pool shut down successfully.");
+    }
+    
+    public static void createTables() {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            // Create user_accounts table
+            stmt.execute("CREATE TABLE IF NOT EXISTS user_accounts (" +
+                        "user_id VARCHAR(20) PRIMARY KEY, " +
+                        "username VARCHAR(50) NOT NULL UNIQUE, " +
+                        "password VARCHAR(100) NOT NULL, " +
+                        "role VARCHAR(20) NOT NULL, " +
+                        "status VARCHAR(20) DEFAULT 'active', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+            
+            // Create employees table
+            stmt.execute("CREATE TABLE IF NOT EXISTS employees (" +
+                        "employee_id VARCHAR(20) PRIMARY KEY, " +
+                        "full_name VARCHAR(100) NOT NULL, " +
+                        "department VARCHAR(50), " +
+                        "designation VARCHAR(50), " +
+                        "FOREIGN KEY (employee_id) REFERENCES user_accounts(user_id))");
+            
+            // Create work_records table
+            stmt.execute("CREATE TABLE IF NOT EXISTS work_records (" +
+                        "record_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "employee_id VARCHAR(20) NOT NULL, " +
+                        "work_date DATE NOT NULL, " +
+                        "work_type VARCHAR(50) NOT NULL, " +
+                        "task VARCHAR(100) NOT NULL, " +
+                        "start_time TIME NOT NULL, " +
+                        "end_time TIME NOT NULL, " +
+                        "working_hours DECIMAL(5,2) NOT NULL, " +
+                        "overtime_hours DECIMAL(5,2) NOT NULL, " +
+                        "description TEXT, " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
+            
+            // Create salary_calculations table
+            stmt.execute("CREATE TABLE IF NOT EXISTS salary_calculations (" +
+                        "calculation_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "employee_id VARCHAR(20) NOT NULL, " +
+                        "month INT NOT NULL, " +
+                        "year INT NOT NULL, " +
+                        "base_salary DECIMAL(10,2) NOT NULL, " +
+                        "overtime_pay DECIMAL(10,2) DEFAULT 0, " +
+                        "deductions DECIMAL(10,2) DEFAULT 0, " +
+                        "net_salary DECIMAL(10,2) NOT NULL, " +
+                        "status VARCHAR(20) DEFAULT 'pending', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
+            
+            // Create salary_payments table
+            stmt.execute("CREATE TABLE IF NOT EXISTS salary_payments (" +
+                        "payment_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "calculation_id INT NOT NULL, " +
+                        "payment_date DATE NOT NULL, " +
+                        "amount DECIMAL(10,2) NOT NULL, " +
+                        "payment_method VARCHAR(50) NOT NULL, " +
+                        "status VARCHAR(20) DEFAULT 'pending', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (calculation_id) REFERENCES salary_calculations(calculation_id))");
+            
+            // Create attendance table
+            stmt.execute("CREATE TABLE IF NOT EXISTS attendance (" +
+                        "attendance_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "employee_id VARCHAR(20) NOT NULL, " +
+                        "work_date DATE NOT NULL, " +
+                        "shift_type VARCHAR(20) NOT NULL, " +
+                        "start_time TIME NOT NULL, " +
+                        "end_time TIME NOT NULL, " +
+                        "working_hours DECIMAL(5,2) NOT NULL, " +
+                        "status VARCHAR(20) DEFAULT 'present', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
+            
+            // Create work_assignments table
+            stmt.execute("CREATE TABLE IF NOT EXISTS work_assignments (" +
+                        "assignment_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "employee_id VARCHAR(20) NOT NULL, " +
+                        "project_name VARCHAR(100) NOT NULL, " +
+                        "task_description TEXT NOT NULL, " +
+                        "start_date DATE NOT NULL, " +
+                        "end_date DATE, " +
+                        "status VARCHAR(20) DEFAULT 'pending', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
+            
+            // Create activity_logs table
+            stmt.execute("CREATE TABLE IF NOT EXISTS activity_logs (" +
+                        "log_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                        "user_id VARCHAR(20) NOT NULL, " +
+                        "activity_type VARCHAR(50) NOT NULL, " +
+                        "details TEXT, " +
+                        "status VARCHAR(20) DEFAULT 'success', " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (user_id) REFERENCES user_accounts(user_id))");
+            
+            LOGGER.info("Database tables created successfully.");
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error creating database tables", e);
+        }
     }
 }
 

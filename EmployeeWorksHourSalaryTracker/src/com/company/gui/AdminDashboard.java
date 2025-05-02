@@ -14,12 +14,16 @@ import javax.swing.table.DefaultTableModel;
 import java.util.Vector;
 import java.io.File;
 import java.awt.Desktop;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AdminDashboard extends JFrame {
   
     // A status label at the bottom serves as our status bar.
     private JLabel statusBar;
     private JTabbedPane tabbedPane;
+    private JTable employeeTable;
+    private DefaultTableModel employeeTableModel;
 
     public AdminDashboard() {
         setTitle("Admin Dashboard");
@@ -98,6 +102,16 @@ public class AdminDashboard extends JFrame {
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
+
+        // Initialize employee table model
+        String[] employeeColumns = {"Employee ID", "Name", "Department", "Designation", "Status"};
+        employeeTableModel = new DefaultTableModel(employeeColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        employeeTable = new JTable(employeeTableModel);
     }
 
     private JPanel createHomePanel() {
@@ -570,7 +584,7 @@ public class AdminDashboard extends JFrame {
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // Create table model
-        String[] columnNames = {"ID", "Name", "Email", "Department", "Designation", "Actions"};
+        String[] columnNames = {"ID", "Name", "Department", "Designation", "UPI ID", "Mobile", "Actions"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -607,6 +621,30 @@ public class AdminDashboard extends JFrame {
             }
         });
         
+        JButton updateUpiBtn = createStyledButton("Update UPI & Mobile");
+        updateUpiBtn.setBackground(new Color(60, 179, 113));
+        updateUpiBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                updateUpiBtn.setBackground(new Color(50, 150, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                updateUpiBtn.setBackground(new Color(60, 179, 113));
+            }
+        });
+        updateUpiBtn.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    String employeeId = (String) model.getValueAt(selectedRow, 0);
+                    updateEmployeeUpiAndMobile(employeeId);
+                } else {
+                    JOptionPane.showMessageDialog(AdminDashboard.this, 
+                        "Please select an employee to update UPI ID and mobile number.", 
+                        "No Selection", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        
         JButton assignWorkBtn = createStyledButton("Assign Work");
         assignWorkBtn.setBackground(new Color(60, 179, 113));
         assignWorkBtn.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -633,6 +671,7 @@ public class AdminDashboard extends JFrame {
         
         buttonPanel.add(refreshBtn);
         buttonPanel.add(addEmployeeBtn);
+        buttonPanel.add(updateUpiBtn);
         buttonPanel.add(assignWorkBtn);
         
         panel.add(buttonPanel, BorderLayout.NORTH);
@@ -645,28 +684,34 @@ public class AdminDashboard extends JFrame {
     }
     
     private void loadEmployees(DefaultTableModel model) {
-        model.setRowCount(0);
+        Connection connection = null;
         try {
-            Connection con = DBConnection.getConnection();
-            String query = "SELECT employee_id, full_name, email, department, designation FROM employees";
-            PreparedStatement pst = con.prepareStatement(query);
-            ResultSet rs = pst.executeQuery();
-            
-            while (rs.next()) {
-                Vector<Object> row = new Vector<>();
-                row.add(rs.getString("employee_id"));
-                row.add(rs.getString("full_name"));
-                row.add(rs.getString("email"));
-                row.add(rs.getString("department") != null ? rs.getString("department") : "");
-                row.add(rs.getString("designation") != null ? rs.getString("designation") : "");
-                row.add("Actions");
-                model.addRow(row);
+            connection = DBConnection.getConnection();
+            String sql = "SELECT e.employee_id, e.full_name, e.department, e.designation, e.upi, e.mobile_number " +
+                        "FROM employees e ORDER BY e.employee_id";
+            try (PreparedStatement stmt = connection.prepareStatement(sql);
+                 ResultSet rs = stmt.executeQuery()) {
+                
+                model.setRowCount(0);
+                
+                while (rs.next()) {
+                    model.addRow(new Object[]{
+                        rs.getString("employee_id"),
+                        rs.getString("full_name"),
+                        rs.getString("department"),
+                        rs.getString("designation"),
+                        rs.getString("upi"),
+                        rs.getString("mobile_number")
+                    });
+                }
             }
-            
-            statusBar.setText("Employees loaded successfully.");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            statusBar.setText("Error loading employees: " + ex.getMessage());
+        } catch (SQLException ex) {
+            Logger.getLogger(AdminDashboard.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(this, "Error loading employees: " + ex.getMessage());
+        } finally {
+            if (connection != null) {
+                DBConnection.closeConnection();
+            }
         }
     }
     
@@ -679,6 +724,132 @@ public class AdminDashboard extends JFrame {
         JTable table = (JTable) scrollPane.getViewport().getView();
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         loadEmployees(model);
+    }
+    
+    private void updateEmployeeUpiAndMobile(String employeeId) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Get current UPI ID and mobile number if exists
+            String currentUpi = null;
+            String currentMobile = null;
+            String getQuery = "SELECT upi, mobile_number FROM employees WHERE employee_id = ?";
+            PreparedStatement getStmt = con.prepareStatement(getQuery);
+            getStmt.setString(1, employeeId);
+            ResultSet rs = getStmt.executeQuery();
+            if (rs.next()) {
+                currentUpi = rs.getString("upi");
+                currentMobile = rs.getString("mobile_number");
+            }
+            
+            // Create dialog for UPI ID and mobile number input
+            JDialog dialog = new JDialog(this, "Update UPI ID and Mobile Number", true);
+            dialog.setSize(400, 300);
+            dialog.setLocationRelativeTo(this);
+            
+            JPanel panel = new JPanel(new GridBagLayout());
+            panel.setBackground(new Color(240, 240, 245));
+            panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.anchor = GridBagConstraints.WEST;
+            
+            // Current UPI ID
+            JLabel currentUpiLabel = new JLabel("Current UPI ID:");
+            currentUpiLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            panel.add(currentUpiLabel, gbc);
+            
+            gbc.gridx = 1;
+            JLabel currentUpiValue = new JLabel(currentUpi != null ? currentUpi : "Not set");
+            currentUpiValue.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panel.add(currentUpiValue, gbc);
+            
+            // New UPI ID
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            JLabel newUpiLabel = new JLabel("New UPI ID:");
+            newUpiLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            panel.add(newUpiLabel, gbc);
+            
+            gbc.gridx = 1;
+            JTextField upiField = new JTextField(20);
+            upiField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panel.add(upiField, gbc);
+            
+            // Current Mobile Number
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            JLabel currentMobileLabel = new JLabel("Current Mobile:");
+            currentMobileLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            panel.add(currentMobileLabel, gbc);
+            
+            gbc.gridx = 1;
+            JLabel currentMobileValue = new JLabel(currentMobile != null ? currentMobile : "Not set");
+            currentMobileValue.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panel.add(currentMobileValue, gbc);
+            
+            // New Mobile Number
+            gbc.gridx = 0;
+            gbc.gridy = 3;
+            JLabel newMobileLabel = new JLabel("New Mobile:");
+            newMobileLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            panel.add(newMobileLabel, gbc);
+            
+            gbc.gridx = 1;
+            JTextField mobileField = new JTextField(20);
+            mobileField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panel.add(mobileField, gbc);
+            
+            // Save button
+            gbc.gridx = 0;
+            gbc.gridy = 4;
+            gbc.gridwidth = 2;
+            gbc.anchor = GridBagConstraints.CENTER;
+            
+            JButton saveBtn = createStyledButton("Save");
+            saveBtn.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    String newUpi = upiField.getText().trim();
+                    String newMobile = mobileField.getText().trim();
+                    
+                    if (newUpi.isEmpty() || newMobile.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog, "Please enter both UPI ID and Mobile Number", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    
+                    try {
+                        String updateQuery = "UPDATE employees SET upi = ?, mobile_number = ? WHERE employee_id = ?";
+                        PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+                        updateStmt.setString(1, newUpi);
+                        updateStmt.setString(2, newMobile);
+                        updateStmt.setString(3, employeeId);
+                        updateStmt.executeUpdate();
+                        
+                        statusBar.setText("UPI ID and Mobile Number updated successfully");
+                        dialog.dispose();
+                        // Refresh the employees table
+                        JPanel employeesPanel = (JPanel) tabbedPane.getComponentAt(2);
+                        JScrollPane scrollPane = (JScrollPane) employeesPanel.getComponent(1);
+                        JTable table = (JTable) scrollPane.getViewport().getView();
+                        DefaultTableModel model = (DefaultTableModel) table.getModel();
+                        loadEmployees(model);
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(dialog, "Error updating information: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+            panel.add(saveBtn, gbc);
+            
+            dialog.add(panel);
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error updating UPI ID and Mobile Number: " + ex.getMessage());
+        }
     }
     
     private JPanel createAttendancePanel() {

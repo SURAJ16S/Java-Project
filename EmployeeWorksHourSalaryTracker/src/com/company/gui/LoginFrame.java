@@ -242,7 +242,7 @@ public class LoginFrame extends JFrame {
                 if (userType.equals("admin")) {
                     new AdminDashboard().setVisible(true);
                 } else if (userType.equals("developer")) {
-                    new DeveloperDashboard().setVisible(true);
+                    new DeveloperDashboard(userId).setVisible(true);
                 } else {
                     new EmployeeDashboard(userId).setVisible(true);
                 }
