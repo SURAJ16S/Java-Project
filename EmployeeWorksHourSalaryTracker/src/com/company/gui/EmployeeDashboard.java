@@ -14,6 +14,17 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.DefaultCellEditor;
+import javax.swing.ButtonGroup;
+import javax.swing.JRadioButton;
 
 public class EmployeeDashboard extends JFrame {
     private String employeeId;
@@ -218,35 +229,50 @@ public class EmployeeDashboard extends JFrame {
     }
     
     private void viewAttendance() {
-        try {
-            Connection con = DBConnection.getConnection();
-            String query = "SELECT work_date, shift_type, start_time, end_time, working_hours " +
-                          "FROM attendance WHERE employee_id = ? ORDER BY work_date DESC, start_time DESC";
-            PreparedStatement pst = con.prepareStatement(query);
-            pst.setString(1, employeeId);
-            ResultSet rs = pst.executeQuery();
-            
-            StringBuilder sb = new StringBuilder();
-            while (rs.next()) {
-                sb.append("Date: ").append(rs.getDate("work_date"))
-                  .append("\nShift: ").append(rs.getString("shift_type"))
-                  .append("\nStart: ").append(rs.getTime("start_time"))
-                  .append("\nEnd: ").append(rs.getTime("end_time") != null ? rs.getTime("end_time") : "Not clocked out")
-                  .append("\nHours: ").append(rs.getDouble("working_hours") != 0 ? rs.getDouble("working_hours") : "In progress")
-                  .append("\n\n");
+        JDialog dialog = new JDialog(this, "Mark Attendance", true);
+        dialog.setSize(800, 600);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBackground(new Color(240, 240, 245));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Create table model
+        String[] columnNames = {"Date", "Day", "Status"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2; // Only Status column is editable
             }
-            
-            JTextArea textArea = new JTextArea(sb.toString());
-            textArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(textArea);
-            scrollPane.setPreferredSize(new Dimension(400, 300));
-            
-            JOptionPane.showMessageDialog(this, scrollPane, "Attendance Records", JOptionPane.INFORMATION_MESSAGE);
-            statusBar.setText("Attendance records displayed successfully.");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            statusBar.setText("Error viewing attendance: " + ex.getMessage());
-        }
+        };
+
+        JTable table = new JTable(model);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(70, 130, 180));
+        table.getTableHeader().setForeground(Color.WHITE);
+
+        // Set custom renderer and editor for Status column
+        table.getColumnModel().getColumn(2).setCellRenderer(new StatusCellRenderer());
+        table.getColumnModel().getColumn(2).setCellEditor(new StatusCellEditor());
+
+        // Add save button
+        JButton saveBtn = createStyledButton("Save Attendance");
+        saveBtn.addActionListener(e -> saveAttendance(model));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(240, 240, 245));
+        buttonPanel.add(saveBtn);
+
+        mainPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+
+        // Load attendance data
+        loadAttendanceData(model);
     }
     
     private void viewSalary() {
@@ -522,6 +548,410 @@ public class EmployeeDashboard extends JFrame {
         });
         
         return button;
+    }
+
+    private void markAttendance(LocalDate date, boolean isPresent, JLabel dayLabel) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // First check if record exists
+            String checkQuery = "SELECT start_time FROM attendance WHERE employee_id = ? AND work_date = ?";
+            PreparedStatement checkStmt = con.prepareStatement(checkQuery);
+            checkStmt.setString(1, employeeId);
+            checkStmt.setDate(2, Date.valueOf(date));
+            ResultSet rs = checkStmt.executeQuery();
+            
+            String query;
+            if (rs.next()) {
+                // Update existing record
+                query = "UPDATE attendance SET attendance_status = ?, start_time = COALESCE(start_time, NOW()) WHERE employee_id = ? AND work_date = ?";
+            } else {
+                // Insert new record
+                query = "INSERT INTO attendance (employee_id, work_date, shift_type, start_time, end_time, working_hours, attendance_status) " +
+                       "VALUES (?, ?, 'fulltime', NOW(), NULL, 0, ?)";
+            }
+            
+            PreparedStatement pst = con.prepareStatement(query);
+            if (rs.next()) {
+                pst.setString(1, isPresent ? "present" : "absent");
+                pst.setString(2, employeeId);
+                pst.setDate(3, Date.valueOf(date));
+            } else {
+                pst.setString(1, employeeId);
+                pst.setDate(2, Date.valueOf(date));
+                pst.setString(3, isPresent ? "present" : "absent");
+            }
+            
+            pst.executeUpdate();
+
+            // Update UI immediately
+            updateDayLabelAppearance(dayLabel, isPresent ? "present" : "absent");
+            statusBar.setText("Attendance marked successfully");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error marking attendance: " + ex.getMessage());
+        }
+    }
+
+    private void updateDayLabelAppearance(JLabel dayLabel, String status) {
+        if (status.equals("present")) {
+            dayLabel.setBackground(new Color(60, 179, 113)); // Green for present
+            dayLabel.setForeground(Color.WHITE);
+        } else if (status.equals("absent")) {
+            dayLabel.setBackground(new Color(220, 53, 69)); // Red for absent
+            dayLabel.setForeground(Color.WHITE);
+        } else if (status.equals("holiday")) {
+            dayLabel.setBackground(new Color(255, 193, 7)); // Yellow for holiday
+            dayLabel.setForeground(Color.BLACK);
+        }
+        dayLabel.setOpaque(true);
+        dayLabel.repaint();
+    }
+
+    private void updateCalendarForEmployee(JPanel calendarGrid, JLabel monthLabel) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Get current month and year
+            LocalDate today = LocalDate.now();
+            int currentMonth = today.getMonthValue();
+            int currentYear = today.getYear();
+            
+            // Update month label
+            monthLabel.setText(Month.of(currentMonth).toString() + " " + currentYear);
+            
+            // Clear previous calendar
+            calendarGrid.removeAll();
+            
+            // Add day headers
+            String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+            for (String day : days) {
+                JLabel headerLabel = new JLabel(day, SwingConstants.CENTER);
+                headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                headerLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(headerLabel);
+            }
+            
+            // Get attendance data for the employee
+            String query = "SELECT work_date, attendance_status FROM attendance WHERE employee_id = ? AND " +
+                          "MONTH(work_date) = ? AND YEAR(work_date) = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setString(1, employeeId);
+            pst.setInt(2, currentMonth);
+            pst.setInt(3, currentYear);
+            ResultSet rs = pst.executeQuery();
+            
+            // Create a map of dates to attendance status
+            Map<LocalDate, String> attendanceMap = new HashMap<>();
+            while (rs.next()) {
+                Date workDate = rs.getDate("work_date");
+                String status = rs.getString("attendance_status");
+                attendanceMap.put(workDate.toLocalDate(), status);
+            }
+            
+            // Define public holidays
+            Set<LocalDate> publicHolidays = new HashSet<>();
+            publicHolidays.add(LocalDate.of(currentYear, 1, 1)); // New Year
+            publicHolidays.add(LocalDate.of(currentYear, 1, 26)); // Republic Day
+            publicHolidays.add(LocalDate.of(currentYear, 8, 15)); // Independence Day
+            publicHolidays.add(LocalDate.of(currentYear, 10, 2)); // Gandhi Jayanti
+            
+            // Update calendar with attendance data
+            LocalDate firstDay = LocalDate.of(currentYear, currentMonth, 1);
+            int firstDayOfWeek = firstDay.getDayOfWeek().getValue() % 7; // 0 = Sunday
+            
+            // Add empty cells for days before the first day of the month
+            for (int i = 0; i < firstDayOfWeek; i++) {
+                JLabel emptyLabel = new JLabel("");
+                emptyLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(emptyLabel);
+            }
+            
+            int daysInMonth = firstDay.lengthOfMonth();
+            for (int day = 1; day <= daysInMonth; day++) {
+                JLabel dayLabel = new JLabel(String.valueOf(day), SwingConstants.CENTER);
+                dayLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                dayLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                dayLabel.setOpaque(true);
+                
+                LocalDate date = LocalDate.of(currentYear, currentMonth, day);
+                
+                // Check if it's a public holiday
+                if (publicHolidays.contains(date)) {
+                    updateDayLabelAppearance(dayLabel, "holiday");
+                    dayLabel.setToolTipText("Public Holiday");
+                } else {
+                    String status = attendanceMap.get(date);
+                    if (status != null) {
+                        updateDayLabelAppearance(dayLabel, status);
+                    }
+                }
+
+                // Add click listener for each day
+                final LocalDate currentDate = date;
+                dayLabel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (!publicHolidays.contains(currentDate)) {
+                            if (e.getClickCount() == 1) { // Single click for present
+                                markAttendance(currentDate, true, dayLabel);
+                            } else if (e.getClickCount() == 2) { // Double click for absent
+                                markAttendance(currentDate, false, dayLabel);
+                            }
+                        }
+                    }
+                });
+                
+                calendarGrid.add(dayLabel);
+            }
+            
+            // Add empty cells for remaining days
+            int remainingCells = 42 - (firstDayOfWeek + daysInMonth); // 42 = 6 rows * 7 days
+            for (int i = 0; i < remainingCells; i++) {
+                JLabel emptyLabel = new JLabel("");
+                emptyLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(emptyLabel);
+            }
+            
+            calendarGrid.revalidate();
+            calendarGrid.repaint();
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error updating calendar: " + ex.getMessage());
+        }
+    }
+
+    private JPanel createAttendancePanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(240, 240, 245));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Create table model for dates
+        String[] columnNames = {"Date", "Status"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 1; // Only status column is editable
+            }
+        };
+
+        JTable table = new JTable(model);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(70, 130, 180));
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Add custom renderer and editor for the status column
+        table.getColumnModel().getColumn(1).setCellRenderer(new StatusCellRenderer());
+        table.getColumnModel().getColumn(1).setCellEditor(new StatusCellEditor());
+
+        // Add save button
+        JButton saveBtn = createStyledButton("Save Attendance");
+        saveBtn.addActionListener(e -> saveAttendance(model));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(new Color(240, 240, 245));
+        buttonPanel.add(saveBtn);
+
+        panel.add(buttonPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // Load initial data
+        loadAttendanceData(model);
+
+        return panel;
+    }
+
+    private void loadAttendanceData(DefaultTableModel model) {
+        model.setRowCount(0);
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Get current month and year
+            LocalDate today = LocalDate.now();
+            int currentMonth = today.getMonthValue();
+            int currentYear = today.getYear();
+            
+            // Get all dates in the current month
+            LocalDate firstDay = LocalDate.of(currentYear, currentMonth, 1);
+            int daysInMonth = firstDay.lengthOfMonth();
+            
+            // Define public holidays
+            Set<LocalDate> publicHolidays = new HashSet<>();
+            publicHolidays.add(LocalDate.of(currentYear, 1, 1)); // New Year
+            publicHolidays.add(LocalDate.of(currentYear, 1, 26)); // Republic Day
+            publicHolidays.add(LocalDate.of(currentYear, 8, 15)); // Independence Day
+            publicHolidays.add(LocalDate.of(currentYear, 10, 2)); // Gandhi Jayanti
+            
+            // Get existing attendance records
+            String query = "SELECT work_date, attendance_status FROM attendance WHERE employee_id = ? AND " +
+                          "MONTH(work_date) = ? AND YEAR(work_date) = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setString(1, employeeId);
+            pst.setInt(2, currentMonth);
+            pst.setInt(3, currentYear);
+            ResultSet rs = pst.executeQuery();
+            
+            // Create a map of dates to attendance status
+            Map<LocalDate, String> attendanceMap = new HashMap<>();
+            while (rs.next()) {
+                Date workDate = rs.getDate("work_date");
+                String status = rs.getString("attendance_status");
+                attendanceMap.put(workDate.toLocalDate(), status);
+            }
+            
+            // Add all dates to the table
+            for (int day = 1; day <= daysInMonth; day++) {
+                LocalDate date = LocalDate.of(currentYear, currentMonth, day);
+                String status;
+                
+                if (publicHolidays.contains(date)) {
+                    status = "Holiday";
+                } else {
+                    status = attendanceMap.getOrDefault(date, "Present");
+                }
+                
+                model.addRow(new Object[]{date, status});
+            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error loading attendance data: " + ex.getMessage());
+        }
+    }
+
+    private void saveAttendance(DefaultTableModel model) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Start transaction
+            con.setAutoCommit(false);
+            
+            try {
+                for (int row = 0; row < model.getRowCount(); row++) {
+                    LocalDate date = (LocalDate) model.getValueAt(row, 0);
+                    String status = (String) model.getValueAt(row, 1);
+                    
+                    if (!status.equals("Holiday")) {
+                        String query = "INSERT INTO attendance (employee_id, work_date, shift_type, start_time, end_time, working_hours, attendance_status) " +
+                                      "VALUES (?, ?, 'fulltime', NULL, NULL, 0, ?) " +
+                                      "ON DUPLICATE KEY UPDATE attendance_status = ?";
+                        PreparedStatement pst = con.prepareStatement(query);
+                        pst.setString(1, employeeId);
+                        pst.setDate(2, Date.valueOf(date));
+                        pst.setString(3, status);
+                        pst.setString(4, status);
+                        pst.executeUpdate();
+                    }
+                }
+                
+                con.commit();
+                statusBar.setText("Attendance saved successfully");
+                JOptionPane.showMessageDialog(this, "Attendance saved successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                
+            } catch (Exception ex) {
+                con.rollback();
+                throw ex;
+            } finally {
+                con.setAutoCommit(true);
+            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error saving attendance: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error saving attendance: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Custom cell renderer for status column
+    private class StatusCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            String status = (String) value;
+            
+            if (status.equals("Present")) {
+                label.setBackground(new Color(60, 179, 113)); // Green
+                label.setForeground(Color.WHITE);
+            } else if (status.equals("Absent")) {
+                label.setBackground(new Color(220, 53, 69)); // Red
+                label.setForeground(Color.WHITE);
+            } else if (status.equals("Holiday")) {
+                label.setBackground(new Color(255, 193, 7)); // Yellow
+                label.setForeground(Color.BLACK);
+            }
+            
+            label.setOpaque(true);
+            return label;
+        }
+    }
+
+    // Custom cell editor for status column
+    private class StatusCellEditor extends DefaultCellEditor {
+        private JPanel panel;
+        private JRadioButton presentRadio;
+        private JRadioButton absentRadio;
+        private JRadioButton holidayRadio;
+        private JRadioButton notMarkedRadio;
+        private ButtonGroup buttonGroup;
+
+        public StatusCellEditor() {
+            super(new JTextField());
+            panel = new JPanel(new GridLayout(4, 1));
+            buttonGroup = new ButtonGroup();
+
+            presentRadio = new JRadioButton("Present");
+            absentRadio = new JRadioButton("Absent");
+            holidayRadio = new JRadioButton("Holiday");
+            notMarkedRadio = new JRadioButton("Not Marked");
+
+            buttonGroup.add(presentRadio);
+            buttonGroup.add(absentRadio);
+            buttonGroup.add(holidayRadio);
+            buttonGroup.add(notMarkedRadio);
+
+            panel.add(presentRadio);
+            panel.add(absentRadio);
+            panel.add(holidayRadio);
+            panel.add(notMarkedRadio);
+
+            // Add action listeners to automatically stop editing when a radio button is selected
+            ActionListener radioListener = e -> stopCellEditing();
+            presentRadio.addActionListener(radioListener);
+            absentRadio.addActionListener(radioListener);
+            holidayRadio.addActionListener(radioListener);
+            notMarkedRadio.addActionListener(radioListener);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            String status = (String) value;
+            switch (status) {
+                case "Present":
+                    presentRadio.setSelected(true);
+                    break;
+                case "Absent":
+                    absentRadio.setSelected(true);
+                    break;
+                case "Holiday":
+                    holidayRadio.setSelected(true);
+                    break;
+                default:
+                    notMarkedRadio.setSelected(true);
+            }
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            if (presentRadio.isSelected()) return "Present";
+            if (absentRadio.isSelected()) return "Absent";
+            if (holidayRadio.isSelected()) return "Holiday";
+            return "Not Marked";
+        }
     }
 
     public static void main(String[] args) {

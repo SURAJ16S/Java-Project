@@ -16,6 +16,12 @@ import java.io.File;
 import java.awt.Desktop;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.time.LocalDate;
+import java.time.Month;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class AdminDashboard extends JFrame {
   
@@ -24,12 +30,22 @@ public class AdminDashboard extends JFrame {
     private JTabbedPane tabbedPane;
     private JTable employeeTable;
     private DefaultTableModel employeeTableModel;
+    private String selectedEmployeeId;
+    private int currentMonth;
+    private int currentYear;
+    private JPanel calendarGrid;
 
     public AdminDashboard() {
         setTitle("Admin Dashboard");
         setSize(800, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        
+        // Initialize current month and year
+        LocalDate today = LocalDate.now();
+        currentMonth = today.getMonthValue();
+        currentYear = today.getYear();
+        
         initComponents();
     }
 
@@ -611,16 +627,6 @@ public class AdminDashboard extends JFrame {
             }
         });
         
-        JButton addEmployeeBtn = createStyledButton("Add Employee");
-        addEmployeeBtn.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                // TODO: Implement add employee functionality
-                JOptionPane.showMessageDialog(AdminDashboard.this, 
-                    "Add Employee functionality will be implemented soon.", 
-                    "Coming Soon", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        
         JButton updateUpiBtn = createStyledButton("Update UPI & Mobile");
         updateUpiBtn.setBackground(new Color(60, 179, 113));
         updateUpiBtn.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -670,7 +676,6 @@ public class AdminDashboard extends JFrame {
         });
         
         buttonPanel.add(refreshBtn);
-        buttonPanel.add(addEmployeeBtn);
         buttonPanel.add(updateUpiBtn);
         buttonPanel.add(assignWorkBtn);
         
@@ -812,24 +817,20 @@ public class AdminDashboard extends JFrame {
             JButton saveBtn = createStyledButton("Save");
             saveBtn.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    String newUpi = upiField.getText().trim();
-                    String newMobile = mobileField.getText().trim();
-                    
-                    if (newUpi.isEmpty() || newMobile.isEmpty()) {
-                        JOptionPane.showMessageDialog(dialog, "Please enter both UPI ID and Mobile Number", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                    
                     try {
                         String updateQuery = "UPDATE employees SET upi = ?, mobile_number = ? WHERE employee_id = ?";
                         PreparedStatement updateStmt = con.prepareStatement(updateQuery);
-                        updateStmt.setString(1, newUpi);
-                        updateStmt.setString(2, newMobile);
+                        updateStmt.setString(1, upiField.getText().trim());
+                        updateStmt.setString(2, mobileField.getText().trim());
                         updateStmt.setString(3, employeeId);
                         updateStmt.executeUpdate();
                         
-                        statusBar.setText("UPI ID and Mobile Number updated successfully");
+                        JOptionPane.showMessageDialog(dialog, 
+                            "UPI ID and mobile number updated successfully!", 
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                        
                         dialog.dispose();
+                        
                         // Refresh the employees table
                         JPanel employeesPanel = (JPanel) tabbedPane.getComponentAt(2);
                         JScrollPane scrollPane = (JScrollPane) employeesPanel.getComponent(1);
@@ -838,17 +839,35 @@ public class AdminDashboard extends JFrame {
                         loadEmployees(model);
                     } catch (SQLException ex) {
                         ex.printStackTrace();
-                        JOptionPane.showMessageDialog(dialog, "Error updating information: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(dialog, 
+                            "Error updating UPI ID and mobile number: " + ex.getMessage(), 
+                            "Database Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             });
-            panel.add(saveBtn, gbc);
             
+            JButton cancelBtn = createStyledButton("Cancel");
+            cancelBtn.setBackground(new Color(220, 53, 69));
+            cancelBtn.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    dialog.dispose();
+                }
+            });
+            
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+            buttonPanel.setBackground(new Color(240, 240, 245));
+            buttonPanel.add(saveBtn);
+            buttonPanel.add(cancelBtn);
+            
+            panel.add(buttonPanel, gbc);
             dialog.add(panel);
             dialog.setVisible(true);
+            
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusBar.setText("Error updating UPI ID and Mobile Number: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error creating update dialog: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -856,79 +875,385 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(new Color(240, 240, 245));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Create table model
-        String[] columnNames = {"ID", "Employee", "Date", "Shift", "Start Time", "End Time", "Hours"};
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+
+        // Create split pane for employee list and calendar
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setDividerLocation(300);
+        splitPane.setBackground(new Color(240, 240, 245));
+
+        // Left panel - Employee list
+        JPanel employeeListPanel = new JPanel(new BorderLayout());
+        employeeListPanel.setBackground(new Color(240, 240, 245));
+        employeeListPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Create table model for employees
+        String[] columnNames = {"Employee ID", "Name", "Department"};
+        DefaultTableModel employeeModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-        
-        JTable table = new JTable(model);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        table.setRowHeight(30);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        table.getTableHeader().setBackground(new Color(70, 130, 180));
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        
-        // Add action buttons
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        buttonPanel.setBackground(new Color(240, 240, 245));
-        
+
+        JTable employeeTable = new JTable(employeeModel);
+        employeeTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        employeeTable.setRowHeight(30);
+        employeeTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        employeeTable.getTableHeader().setBackground(new Color(70, 130, 180));
+        employeeTable.getTableHeader().setForeground(Color.WHITE);
+        employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Add refresh button
         JButton refreshBtn = createStyledButton("Refresh");
         refreshBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                loadAttendance(model);
+                loadEmployeesForAttendance(employeeModel);
             }
         });
-        
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        buttonPanel.setBackground(new Color(240, 240, 245));
         buttonPanel.add(refreshBtn);
-        
-        panel.add(buttonPanel, BorderLayout.NORTH);
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        
-        // Load data
-        loadAttendance(model);
-        
+
+        employeeListPanel.add(buttonPanel, BorderLayout.NORTH);
+        employeeListPanel.add(new JScrollPane(employeeTable), BorderLayout.CENTER);
+
+        // Right panel - Calendar
+        JPanel calendarPanel = new JPanel(new BorderLayout());
+        calendarPanel.setBackground(new Color(240, 240, 245));
+        calendarPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Create calendar
+        JPanel monthPanel = new JPanel(new BorderLayout());
+        monthPanel.setBackground(new Color(240, 240, 245));
+
+        JLabel monthLabel = new JLabel("", SwingConstants.CENTER);
+        monthLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        monthPanel.add(monthLabel, BorderLayout.CENTER);
+
+        JButton prevMonthBtn = new JButton("<");
+        prevMonthBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        prevMonthBtn.setBackground(new Color(70, 130, 180));
+        prevMonthBtn.setForeground(Color.WHITE);
+        prevMonthBtn.setFocusPainted(false);
+        prevMonthBtn.addActionListener(e -> {
+            currentMonth--;
+            if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            updateCalendarForEmployee(calendarGrid, monthLabel);
+        });
+
+        JButton nextMonthBtn = new JButton(">");
+        nextMonthBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        nextMonthBtn.setBackground(new Color(70, 130, 180));
+        nextMonthBtn.setForeground(Color.WHITE);
+        nextMonthBtn.setFocusPainted(false);
+        nextMonthBtn.addActionListener(e -> {
+            currentMonth++;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            }
+            updateCalendarForEmployee(calendarGrid, monthLabel);
+        });
+
+        JPanel monthNavPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        monthNavPanel.setBackground(new Color(240, 240, 245));
+        monthNavPanel.add(prevMonthBtn);
+        monthNavPanel.add(nextMonthBtn);
+
+        monthPanel.add(monthNavPanel, BorderLayout.EAST);
+
+        // Calendar grid
+        calendarGrid = new JPanel(new GridLayout(0, 7, 5, 5));
+        calendarGrid.setBackground(new Color(240, 240, 245));
+
+        // Add day headers
+        String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        for (String day : days) {
+            JLabel dayLabel = new JLabel(day, SwingConstants.CENTER);
+            dayLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            dayLabel.setBackground(new Color(70, 130, 180));
+            dayLabel.setForeground(Color.WHITE);
+            dayLabel.setOpaque(true);
+            calendarGrid.add(dayLabel);
+        }
+
+        calendarPanel.add(monthPanel, BorderLayout.NORTH);
+        calendarPanel.add(calendarGrid, BorderLayout.CENTER);
+
+        // Add panels to split pane
+        splitPane.setLeftComponent(employeeListPanel);
+        splitPane.setRightComponent(calendarPanel);
+
+        panel.add(splitPane, BorderLayout.CENTER);
+
+        // Load initial data
+        loadEmployeesForAttendance(employeeModel);
+
+        // Add selection listener to employee table
+        employeeTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = employeeTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    selectedEmployeeId = (String) employeeModel.getValueAt(selectedRow, 0);
+                    updateCalendarForEmployee(calendarGrid, monthLabel);
+                }
+            }
+        });
+
         return panel;
     }
-    
-    private void loadAttendance(DefaultTableModel model) {
+
+    private void loadEmployeesForAttendance(DefaultTableModel model) {
         model.setRowCount(0);
         try {
             Connection con = DBConnection.getConnection();
-            String query = "SELECT a.attendance_id, a.employee_id, e.full_name, a.work_date, " +
-                          "a.shift_type, a.start_time, a.end_time, a.working_hours " +
-                          "FROM attendance a JOIN employees e ON a.employee_id = e.employee_id " +
-                          "ORDER BY a.work_date DESC, a.start_time DESC";
+            String query = "SELECT employee_id, full_name, department FROM employees ORDER BY employee_id";
             PreparedStatement pst = con.prepareStatement(query);
             ResultSet rs = pst.executeQuery();
-            boolean hasData = false;
+
             while (rs.next()) {
-                hasData = true;
-                Vector<Object> row = new Vector<>();
-                row.add(rs.getInt("attendance_id"));
-                row.add(rs.getString("employee_id"));
-                row.add(rs.getString("full_name"));
-                row.add(rs.getDate("work_date") != null ? rs.getDate("work_date").toString() : "");
-                row.add(rs.getString("shift_type"));
-                row.add(rs.getTime("start_time") != null ? rs.getTime("start_time").toString() : "");
-                row.add(rs.getTime("end_time") != null ? rs.getTime("end_time").toString() : "Not clocked out");
-                row.add(rs.getDouble("working_hours") != 0 ? rs.getDouble("working_hours") : "In progress");
-                model.addRow(row);
-            }
-            if (!hasData) {
-                statusBar.setText("No attendance records found.");
-            } else {
-                statusBar.setText("Attendance records loaded successfully.");
+                model.addRow(new Object[]{
+                    rs.getString("employee_id"),
+                    rs.getString("full_name"),
+                    rs.getString("department")
+                });
             }
         } catch (Exception ex) {
             ex.printStackTrace();
-            statusBar.setText("Error loading attendance records: " + ex.getMessage());
+            statusBar.setText("Error loading employees: " + ex.getMessage());
         }
+    }
+
+    private void updateCalendarForEmployee(JPanel calendarGrid, JLabel monthLabel) {
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // Update month label
+            monthLabel.setText(Month.of(currentMonth).toString() + " " + currentYear);
+            
+            // Clear previous calendar
+            calendarGrid.removeAll();
+            
+            // Add day headers
+            String[] days = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+            for (String day : days) {
+                JLabel headerLabel = new JLabel(day, SwingConstants.CENTER);
+                headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                headerLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(headerLabel);
+            }
+            
+            // Get attendance data for the employee
+            String query = "SELECT work_date, attendance_status FROM attendance WHERE employee_id = ? AND " +
+                          "MONTH(work_date) = ? AND YEAR(work_date) = ?";
+            PreparedStatement pst = con.prepareStatement(query);
+            pst.setString(1, selectedEmployeeId);
+            pst.setInt(2, currentMonth);
+            pst.setInt(3, currentYear);
+            ResultSet rs = pst.executeQuery();
+            
+            // Create a map of dates to attendance status
+            Map<LocalDate, String> attendanceMap = new HashMap<>();
+            while (rs.next()) {
+                Date workDate = rs.getDate("work_date");
+                String status = rs.getString("attendance_status");
+                attendanceMap.put(workDate.toLocalDate(), status);
+            }
+            
+            // Define public holidays
+            Set<LocalDate> publicHolidays = new HashSet<>();
+            publicHolidays.add(LocalDate.of(currentYear, 1, 1)); // New Year
+            publicHolidays.add(LocalDate.of(currentYear, 1, 26)); // Republic Day
+            publicHolidays.add(LocalDate.of(currentYear, 8, 15)); // Independence Day
+            publicHolidays.add(LocalDate.of(currentYear, 10, 2)); // Gandhi Jayanti
+            
+            // Update calendar with attendance data
+            LocalDate firstDay = LocalDate.of(currentYear, currentMonth, 1);
+            int firstDayOfWeek = firstDay.getDayOfWeek().getValue() % 7; // 0 = Sunday
+            
+            // Add empty cells for days before the first day of the month
+            for (int i = 0; i < firstDayOfWeek; i++) {
+                JLabel emptyLabel = new JLabel("");
+                emptyLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(emptyLabel);
+            }
+            
+            int daysInMonth = firstDay.lengthOfMonth();
+            for (int day = 1; day <= daysInMonth; day++) {
+                JLabel dayLabel = new JLabel(String.valueOf(day), SwingConstants.CENTER);
+                dayLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                dayLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                dayLabel.setOpaque(true);
+                
+                LocalDate date = LocalDate.of(currentYear, currentMonth, day);
+                
+                // Check if it's a Sunday
+                if (date.getDayOfWeek().getValue() == 7) { // 7 = Sunday
+                    updateDayLabelAppearance(dayLabel, "sunday");
+                    dayLabel.setToolTipText("Sunday");
+                }
+                // Check if it's a public holiday
+                else if (publicHolidays.contains(date)) {
+                    updateDayLabelAppearance(dayLabel, "holiday");
+                    dayLabel.setToolTipText("Public Holiday");
+                } else {
+                    String status = attendanceMap.get(date);
+                    if (status != null) {
+                        updateDayLabelAppearance(dayLabel, status);
+                    }
+                }
+
+                // Add click listener for each day
+                final LocalDate currentDate = date;
+                dayLabel.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (!publicHolidays.contains(currentDate) && currentDate.getDayOfWeek().getValue() != 7) {
+                            if (e.getClickCount() == 1) { // Single click for present
+                                markAttendance(currentDate, true, dayLabel);
+                            } else if (e.getClickCount() == 2) { // Double click for absent
+                                markAttendance(currentDate, false, dayLabel);
+                            } else if (e.getClickCount() == 3) { // Triple click for public holiday
+                                markPublicHoliday(currentDate, dayLabel);
+                            }
+                        }
+                    }
+                });
+                
+                calendarGrid.add(dayLabel);
+            }
+            
+            // Add empty cells for remaining days
+            int remainingCells = 42 - (firstDayOfWeek + daysInMonth); // 42 = 6 rows * 7 days
+            for (int i = 0; i < remainingCells; i++) {
+                JLabel emptyLabel = new JLabel("");
+                emptyLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+                calendarGrid.add(emptyLabel);
+            }
+            
+            calendarGrid.revalidate();
+            calendarGrid.repaint();
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error updating calendar: " + ex.getMessage());
+        }
+    }
+
+    private void markAttendance(LocalDate date, boolean isPresent, JLabel dayLabel) {
+        if (selectedEmployeeId == null) {
+            JOptionPane.showMessageDialog(this, "Please select an employee first", "No Employee Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // First check if record exists
+            String checkQuery = "SELECT start_time FROM attendance WHERE employee_id = ? AND work_date = ?";
+            PreparedStatement checkStmt = con.prepareStatement(checkQuery);
+            checkStmt.setString(1, selectedEmployeeId);
+            checkStmt.setDate(2, Date.valueOf(date));
+            ResultSet rs = checkStmt.executeQuery();
+            
+            String query;
+            PreparedStatement pst;
+            
+            if (rs.next()) {
+                // Update existing record
+                query = "UPDATE attendance SET attendance_status = ?, start_time = COALESCE(start_time, NOW()), end_time = NOW() WHERE employee_id = ? AND work_date = ?";
+                pst = con.prepareStatement(query);
+                pst.setString(1, isPresent ? "PRESENT" : "ABSENT");
+                pst.setString(2, selectedEmployeeId);
+                pst.setDate(3, Date.valueOf(date));
+            } else {
+                // Insert new record
+                query = "INSERT INTO attendance (employee_id, work_date, shift_type, start_time, end_time, working_hours, attendance_status) " +
+                       "VALUES (?, ?, 'FULLTIME', NOW(), NOW(), 0, ?)";
+                pst = con.prepareStatement(query);
+                pst.setString(1, selectedEmployeeId);
+                pst.setDate(2, Date.valueOf(date));
+                pst.setString(3, isPresent ? "PRESENT" : "ABSENT");
+            }
+            
+            pst.executeUpdate();
+
+            // Update UI immediately
+            updateDayLabelAppearance(dayLabel, isPresent ? "present" : "absent");
+            statusBar.setText("Attendance marked successfully");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error marking attendance: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error marking attendance: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void markPublicHoliday(LocalDate date, JLabel dayLabel) {
+        if (selectedEmployeeId == null) {
+            JOptionPane.showMessageDialog(this, "Please select an employee first", "No Employee Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            Connection con = DBConnection.getConnection();
+            
+            // First check if record exists
+            String checkQuery = "SELECT start_time FROM attendance WHERE employee_id = ? AND work_date = ?";
+            PreparedStatement checkStmt = con.prepareStatement(checkQuery);
+            checkStmt.setString(1, selectedEmployeeId);
+            checkStmt.setDate(2, Date.valueOf(date));
+            ResultSet rs = checkStmt.executeQuery();
+            
+            String query;
+            PreparedStatement pst;
+            
+            if (rs.next()) {
+                // Update existing record
+                query = "UPDATE attendance SET attendance_status = 'PUBLIC_HOLIDAY', start_time = COALESCE(start_time, NOW()), end_time = NOW() WHERE employee_id = ? AND work_date = ?";
+                pst = con.prepareStatement(query);
+                pst.setString(1, selectedEmployeeId);
+                pst.setDate(2, Date.valueOf(date));
+            } else {
+                // Insert new record
+                query = "INSERT INTO attendance (employee_id, work_date, shift_type, start_time, end_time, working_hours, attendance_status) " +
+                       "VALUES (?, ?, 'FULLTIME', NOW(), NOW(), 0, 'PUBLIC_HOLIDAY')";
+                pst = con.prepareStatement(query);
+                pst.setString(1, selectedEmployeeId);
+                pst.setDate(2, Date.valueOf(date));
+            }
+            
+            pst.executeUpdate();
+
+            // Update UI immediately
+            updateDayLabelAppearance(dayLabel, "holiday");
+            statusBar.setText("Marked as public holiday");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            statusBar.setText("Error marking holiday: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error marking holiday: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void updateDayLabelAppearance(JLabel dayLabel, String status) {
+        if (status.equalsIgnoreCase("PRESENT")) {
+            dayLabel.setBackground(new Color(60, 179, 113)); // Green for present
+            dayLabel.setForeground(Color.WHITE);
+        } else if (status.equalsIgnoreCase("ABSENT")) {
+            dayLabel.setBackground(new Color(220, 53, 69)); // Red for absent
+            dayLabel.setForeground(Color.WHITE);
+        } else if (status.equalsIgnoreCase("PUBLIC_HOLIDAY") || status.equalsIgnoreCase("holiday")) {
+            dayLabel.setBackground(new Color(0, 123, 255)); // Blue for public holidays
+            dayLabel.setForeground(Color.WHITE);
+        } else if (status.equalsIgnoreCase("SUNDAY")) {
+            dayLabel.setBackground(new Color(220, 53, 69)); // Red for Sundays
+            dayLabel.setForeground(Color.WHITE);
+        }
+        dayLabel.setOpaque(true);
+        dayLabel.repaint();
     }
     
     private JPanel createSalaryPanel() {
@@ -1025,79 +1350,159 @@ public class AdminDashboard extends JFrame {
             Connection con = DBConnection.getConnection();
             int currentMonth = java.time.LocalDate.now().getMonthValue();
             int currentYear = java.time.LocalDate.now().getYear();
+            
             // Get all employees
             String empQuery = "SELECT employee_id FROM employees";
             PreparedStatement empStmt = con.prepareStatement(empQuery);
             ResultSet empRs = empStmt.executeQuery();
+            
             int count = 0;
             while (empRs.next()) {
                 String employeeId = empRs.getString("employee_id");
-                // Sum up work assignments for this employee for the current month
-                String workQuery = "SELECT SUM(hours) as total_hours, AVG(hourly_rate) as avg_rate FROM work_assignments WHERE employee_id = ? AND MONTH(start_date) = ? AND YEAR(start_date) = ? AND status = 'active'";
+                
+                // Get work assignments for the current month
+                String workQuery = "SELECT SUM(hours) as total_hours, AVG(hourly_rate) as avg_rate " +
+                                 "FROM work_assignments " +
+                                 "WHERE employee_id = ? AND MONTH(start_date) = ? AND YEAR(start_date) = ? " +
+                                 "AND status = 'active'";
                 PreparedStatement workStmt = con.prepareStatement(workQuery);
                 workStmt.setString(1, employeeId);
                 workStmt.setInt(2, currentMonth);
                 workStmt.setInt(3, currentYear);
                 ResultSet workRs = workStmt.executeQuery();
+                
                 double totalHours = 0;
                 double avgRate = 0;
                 if (workRs.next()) {
                     totalHours = workRs.getDouble("total_hours");
                     avgRate = workRs.getDouble("avg_rate");
                 }
-                // Calculate salary (basic: hours * rate)
+                
+                // Get attendance records for the current month
+                String attendanceQuery = "SELECT COUNT(*) as total_days, " +
+                                       "SUM(CASE WHEN attendance_status = 'absent' THEN 1 ELSE 0 END) as absent_days " +
+                                       "FROM attendance " +
+                                       "WHERE employee_id = ? AND MONTH(work_date) = ? AND YEAR(work_date) = ?";
+                PreparedStatement attendanceStmt = con.prepareStatement(attendanceQuery);
+                attendanceStmt.setString(1, employeeId);
+                attendanceStmt.setInt(2, currentMonth);
+                attendanceStmt.setInt(3, currentYear);
+                ResultSet attendanceRs = attendanceStmt.executeQuery();
+                
+                int totalDays = 0;
+                int absentDays = 0;
+                if (attendanceRs.next()) {
+                    totalDays = attendanceRs.getInt("total_days");
+                    absentDays = attendanceRs.getInt("absent_days");
+                }
+                
+                // Calculate base salary
                 double baseSalary = totalHours * avgRate;
-                double nightShiftAllowance = 0; // You can add logic for this
-                double overtimePay = 0; // You can add logic for this
-                double hourlyPay = baseSalary; // For now, same as base
-                double totalSalary = baseSalary + nightShiftAllowance + overtimePay;
-                // Insert or update salary_calculations
-                String checkQuery = "SELECT calculation_id FROM salary_calculations WHERE employee_id = ? AND month = ? AND year = ?";
+                
+                // Calculate deductions for absent days
+                double dailyRate = baseSalary / totalDays;
+                double absentDeduction = absentDays * dailyRate;
+                
+                // Calculate night shift allowance (if applicable)
+                double nightShiftAllowance = 0;
+                String nightShiftQuery = "SELECT SUM(hours) as night_hours " +
+                                       "FROM work_assignments " +
+                                       "WHERE employee_id = ? AND MONTH(start_date) = ? AND YEAR(start_date) = ? " +
+                                       "AND status = 'active'";
+                PreparedStatement nightShiftStmt = con.prepareStatement(nightShiftQuery);
+                nightShiftStmt.setString(1, employeeId);
+                nightShiftStmt.setInt(2, currentMonth);
+                nightShiftStmt.setInt(3, currentYear);
+                ResultSet nightShiftRs = nightShiftStmt.executeQuery();
+                
+                if (nightShiftRs.next()) {
+                    double nightHours = nightShiftRs.getDouble("night_hours");
+                    nightShiftAllowance = nightHours * avgRate * 0.2; // 20% extra for night shifts
+                }
+                
+                // Calculate overtime pay
+                double overtimePay = 0;
+                String overtimeQuery = "SELECT SUM(hours) as overtime_hours " +
+                                     "FROM work_assignments " +
+                                     "WHERE employee_id = ? AND MONTH(start_date) = ? AND YEAR(start_date) = ? " +
+                                     "AND hours > 8 AND status = 'active'";
+                PreparedStatement overtimeStmt = con.prepareStatement(overtimeQuery);
+                overtimeStmt.setString(1, employeeId);
+                overtimeStmt.setInt(2, currentMonth);
+                overtimeStmt.setInt(3, currentYear);
+                ResultSet overtimeRs = overtimeStmt.executeQuery();
+                
+                if (overtimeRs.next()) {
+                    double overtimeHours = overtimeRs.getDouble("overtime_hours");
+                    overtimePay = overtimeHours * avgRate * 0.5; // 50% extra for overtime
+                }
+                
+                // Calculate total salary
+                double totalSalary = baseSalary - absentDeduction + nightShiftAllowance + overtimePay;
+                
+                // Insert or update salary calculation
+                String checkQuery = "SELECT calculation_id FROM salary_calculations " +
+                                  "WHERE employee_id = ? AND month = ? AND year = ?";
                 PreparedStatement checkStmt = con.prepareStatement(checkQuery);
                 checkStmt.setString(1, employeeId);
                 checkStmt.setInt(2, currentMonth);
                 checkStmt.setInt(3, currentYear);
                 ResultSet checkRs = checkStmt.executeQuery();
+                
                 if (checkRs.next()) {
-                    // Update
+                    // Update existing calculation
                     int calcId = checkRs.getInt("calculation_id");
-                    String updateQuery = "UPDATE salary_calculations SET base_salary = ?, night_shift_allowance = ?, overtime_pay = ?, hourly_pay = ?, total_salary = ? WHERE calculation_id = ?";
+                    String updateQuery = "UPDATE salary_calculations SET " +
+                                       "base_salary = ?, absent_deduction = ?, night_shift_allowance = ?, " +
+                                       "overtime_pay = ?, total_salary = ? " +
+                                       "WHERE calculation_id = ?";
                     PreparedStatement updateStmt = con.prepareStatement(updateQuery);
                     updateStmt.setDouble(1, baseSalary);
-                    updateStmt.setDouble(2, nightShiftAllowance);
-                    updateStmt.setDouble(3, overtimePay);
-                    updateStmt.setDouble(4, hourlyPay);
+                    updateStmt.setDouble(2, absentDeduction);
+                    updateStmt.setDouble(3, nightShiftAllowance);
+                    updateStmt.setDouble(4, overtimePay);
                     updateStmt.setDouble(5, totalSalary);
                     updateStmt.setInt(6, calcId);
                     updateStmt.executeUpdate();
                 } else {
-                    // Insert
-                    String insertQuery = "INSERT INTO salary_calculations (employee_id, month, year, base_salary, night_shift_allowance, overtime_pay, hourly_pay, total_salary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    // Insert new calculation
+                    String insertQuery = "INSERT INTO salary_calculations " +
+                                       "(employee_id, month, year, base_salary, absent_deduction, " +
+                                       "night_shift_allowance, overtime_pay, total_salary) " +
+                                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                     PreparedStatement insertStmt = con.prepareStatement(insertQuery);
                     insertStmt.setString(1, employeeId);
                     insertStmt.setInt(2, currentMonth);
                     insertStmt.setInt(3, currentYear);
                     insertStmt.setDouble(4, baseSalary);
-                    insertStmt.setDouble(5, nightShiftAllowance);
-                    insertStmt.setDouble(6, overtimePay);
-                    insertStmt.setDouble(7, hourlyPay);
+                    insertStmt.setDouble(5, absentDeduction);
+                    insertStmt.setDouble(6, nightShiftAllowance);
+                    insertStmt.setDouble(7, overtimePay);
                     insertStmt.setDouble(8, totalSalary);
                     insertStmt.executeUpdate();
                 }
+                
                 count++;
             }
+            
             statusBar.setText("Salaries calculated for " + count + " employees.");
-            JOptionPane.showMessageDialog(this, "Salaries calculated for " + count + " employees.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Salaries calculated for " + count + " employees.", 
+                "Success", JOptionPane.INFORMATION_MESSAGE);
+            
             // Refresh salary table
             JPanel salaryPanel = (JPanel) tabbedPane.getComponentAt(4);
             JScrollPane scrollPane = (JScrollPane) salaryPanel.getComponent(1);
             JTable table = (JTable) scrollPane.getViewport().getView();
             DefaultTableModel model = (DefaultTableModel) table.getModel();
             loadSalaryCalculations(model);
+            
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error calculating salaries: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Error calculating salaries: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Error calculating salaries: " + ex.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -1421,6 +1826,19 @@ public class AdminDashboard extends JFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
             statusBar.setText("Error loading salary history: " + ex.getMessage());
+        }
+    }
+
+    private String generateNewEmployeeId() throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT COUNT(*) FROM employees");
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            int nextId = 1;
+            if (rs.next()) {
+                nextId = rs.getInt(1) + 1;
+            }
+            return "EMP" + String.format("%04d", nextId);
         }
     }
 

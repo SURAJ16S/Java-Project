@@ -2012,3 +2012,443 @@ May 02, 2025 4:08:46 PM com.company.database.DBConnection testConnection
 INFO: MySQL Connection successful!
 May 02, 2025 4:09:09 PM com.company.database.DBConnection getConnection
 INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 4:47:38 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 4:47:38 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 4:47:38 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 4:47:38 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 4:47:38 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 4:47:38 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 4:47:49 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 4:47:49 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 4:47:49 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 4:48:47 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 4:48:51 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:33:54 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 5:33:54 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:45:24 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 5:45:25 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:45:25 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 5:45:25 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 5:45:25 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:45:25 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 5:45:37 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:45:37 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 5:45:37 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:50:33 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 5:50:33 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:50:33 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 5:50:33 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 5:50:33 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:50:33 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 5:50:39 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:50:39 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 5:50:39 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:58:29 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 5:58:30 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:58:30 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 5:58:30 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 5:58:30 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 5:58:30 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 5:58:36 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 5:58:36 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 5:58:36 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:13:00 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 6:13:00 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:13:00 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 6:13:00 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 6:13:00 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:13:00 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 6:13:06 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:13:06 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 6:13:06 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:43:59 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 6:44:00 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:44:00 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 6:44:00 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 6:44:00 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:44:00 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 6:44:07 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:44:07 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 6:44:07 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:46:47 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 6:46:48 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:46:48 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 6:46:48 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 6:46:48 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:46:48 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 6:46:54 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:46:54 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 6:46:54 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:50:16 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 6:50:16 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:50:16 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 6:50:16 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 6:50:16 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:50:16 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 6:50:27 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:50:27 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 6:50:27 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:56:50 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 6:56:50 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:56:50 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 6:56:50 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 6:56:50 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 6:56:50 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 6:56:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 6:56:57 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 6:56:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:01:26 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:01:26 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:01:26 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:01:26 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:01:26 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:01:26 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:01:32 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:01:32 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:01:32 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:18:16 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:18:17 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:18:17 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:18:17 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:18:17 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:18:17 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:18:24 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:18:24 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:18:24 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:20:04 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:20:05 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:20:05 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:20:05 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:20:05 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:20:05 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:20:56 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:20:56 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:20:56 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:22:40 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:22:41 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:22:41 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:22:41 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:22:41 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:22:41 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:22:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:22:57 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:22:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:24:58 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:24:58 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:24:58 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:24:58 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:24:58 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:24:58 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:25:05 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:25:05 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:25:05 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:28:06 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:28:06 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:28:06 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:28:06 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:28:06 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:28:06 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:28:20 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:28:20 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:28:20 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:30:31 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:30:31 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:30:31 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:30:31 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:30:31 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:30:31 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:30:38 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:30:38 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:30:38 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:34:16 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:34:16 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:34:56 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:34:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:34:57 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:34:57 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:34:57 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:34:57 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:35:02 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:35:03 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:35:03 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:39:34 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:39:34 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:39:34 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:39:34 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:39:34 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:39:34 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:39:43 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:39:43 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:39:43 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:42:12 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:42:12 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:44:40 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:44:40 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:44:40 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:44:40 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:44:40 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:44:40 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:44:48 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:44:48 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:44:48 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:52:18 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:52:18 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:52:18 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:52:18 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:52:18 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:52:18 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:52:24 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:52:24 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:52:24 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:57:15 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 7:57:16 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:57:16 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 7:57:16 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 7:57:16 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 7:57:16 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 7:57:23 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 7:57:23 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 7:57:23 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:06:28 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 9:06:29 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 9:06:29 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 9:06:29 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 9:06:29 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 9:06:29 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 9:06:36 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:06:37 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 9:06:37 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:06:59 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 9:07:29 PM com.company.database.DBConnection loadConfiguration
+WARNING: Configuration file not found. Using default values.
+May 02, 2025 9:07:29 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 9:07:29 PM com.company.database.DBConnection createTables
+INFO: Database tables created successfully.
+May 02, 2025 9:07:29 PM com.company.database.DBConnection <clinit>
+INFO: Database connection system initialized successfully.
+May 02, 2025 9:07:29 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: main
+May 02, 2025 9:07:29 PM com.company.database.DBConnection testConnection
+INFO: MySQL Connection successful!
+May 02, 2025 9:07:36 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:07:36 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 9:07:36 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:08:07 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 9:08:07 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0
+May 02, 2025 9:11:07 PM com.company.database.DBConnection closeConnection
+INFO: Connection closed for thread: AWT-EventQueue-0
+May 02, 2025 9:11:07 PM com.company.database.DBConnection getConnection
+INFO: New connection created for thread: AWT-EventQueue-0

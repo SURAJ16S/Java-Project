@@ -4,32 +4,34 @@ USE EmployeeDB;
 
 -- Create user_accounts table
 CREATE TABLE IF NOT EXISTS user_accounts (
-    user_id VARCHAR(10) NOT NULL PRIMARY KEY,
+    user_id VARCHAR(20) PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(100) NOT NULL,
     role ENUM('admin', 'employee', 'developer') NOT NULL
 );
 
 -- Create employees table
 CREATE TABLE IF NOT EXISTS employees (
-    employee_id VARCHAR(20) NOT NULL PRIMARY KEY,
+    employee_id VARCHAR(20) PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     department VARCHAR(50),
     designation VARCHAR(50),
     upi VARCHAR(100),
+    mobile_number VARCHAR(15),
     gender ENUM('M', 'F', 'Other')
 );
 
 -- Create attendance table
 CREATE TABLE IF NOT EXISTS attendance (
-    attendance_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    employee_id VARCHAR(20) NOT NULL,
+    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id VARCHAR(20),
     work_date DATE NOT NULL,
     shift_type ENUM('fulltime', 'night', 'extra', 'hourly') NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     working_hours DECIMAL(4,2),
+    attendance_status ENUM('present', 'absent') DEFAULT 'present',
     FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
 );
 
