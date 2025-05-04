@@ -216,44 +216,136 @@ public class LoginFrame extends JFrame {
     
     private void login() {
         String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword()).trim();
-        String userType = (String) userTypeBox.getSelectedItem();
+        String password = new String(passwordField.getPassword());
         
         if (username.isEmpty() || password.isEmpty()) {
-            statusLabel.setText("Please enter both username and password.");
+            JOptionPane.showMessageDialog(this, 
+                "Please enter both username and password", 
+                "Login Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
         try {
             Connection con = DBConnection.getConnection();
-            String hashedPassword = hashPassword(password);
+            System.out.println("Attempting login for username: " + username);
             
-            String query = "SELECT * FROM user_accounts WHERE username = ? AND password = ? AND role = ?";
+            // First check if it's an employee trying to login with default credentials
+            String checkEmployeeQuery = "SELECT employee_id FROM employees WHERE employee_id = ?";
+            PreparedStatement checkEmployeeStmt = con.prepareStatement(checkEmployeeQuery);
+            checkEmployeeStmt.setString(1, username);
+            ResultSet employeeRs = checkEmployeeStmt.executeQuery();
+            
+            if (employeeRs.next() && username.equals(password)) {
+                System.out.println("Employee found with default credentials");
+                // Check if they already have a user account
+                String checkUserQuery = "SELECT user_id FROM user_accounts WHERE user_id = ?";
+                PreparedStatement checkUserStmt = con.prepareStatement(checkUserQuery);
+                checkUserStmt.setString(1, username);
+                ResultSet userRs = checkUserStmt.executeQuery();
+                
+                if (!userRs.next()) {
+                    // Create user account with default credentials
+                    String hashedPassword = hashPassword(username); // Hash the default password
+                    String insertUserQuery = "INSERT INTO user_accounts (user_id, username, password, role) VALUES (?, ?, ?, 'employee')";
+                    PreparedStatement insertUserStmt = con.prepareStatement(insertUserQuery);
+                    insertUserStmt.setString(1, username);
+                    insertUserStmt.setString(2, username);
+                    insertUserStmt.setString(3, hashedPassword);
+                    insertUserStmt.executeUpdate();
+                }
+                
+                // Log the activity
+                String logQuery = "INSERT INTO activity_logs (user_id, activity_type, details) VALUES (?, 'login', 'Employee logged in with default credentials')";
+                PreparedStatement logStmt = con.prepareStatement(logQuery);
+                logStmt.setString(1, username);
+                logStmt.executeUpdate();
+                
+                // Open employee dashboard
+                new EmployeeDashboard(username).setVisible(true);
+                dispose();
+                return;
+            }
+            
+            // Check regular user credentials (for admin and other users)
+            String query = "SELECT user_id, username, password, role FROM user_accounts WHERE username = ?";
+            System.out.println("Executing query: " + query + " with username: " + username);
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, username);
-            pst.setString(2, hashedPassword);
-            pst.setString(3, userType);
-            
             ResultSet rs = pst.executeQuery();
+            
             if (rs.next()) {
+                String storedPassword = rs.getString("password");
                 String userId = rs.getString("user_id");
-                statusLabel.setText("Login successful!");
+                String role = rs.getString("role");
                 
-                if (userType.equals("admin")) {
-                    new AdminDashboard().setVisible(true);
-                } else if (userType.equals("developer")) {
-                    new DeveloperDashboard(userId).setVisible(true);
+                // Hash the input password for comparison
+                String hashedInputPassword = hashPassword(password);
+                
+                System.out.println("User found in database:");
+                System.out.println("Username: " + username);
+                System.out.println("User ID: " + userId);
+                System.out.println("Role: " + role);
+                System.out.println("Stored password hash: " + storedPassword);
+                System.out.println("Input password hash: " + hashedInputPassword);
+                System.out.println("Password match: " + hashedInputPassword.equals(storedPassword));
+                
+                if (hashedInputPassword.equals(storedPassword)) {
+                    System.out.println("Password verification successful");
+                    // Log the activity
+                    String logQuery = "INSERT INTO activity_logs (user_id, activity_type, details) VALUES (?, 'login', 'User logged in')";
+                    PreparedStatement logStmt = con.prepareStatement(logQuery);
+                    logStmt.setString(1, userId);
+                    logStmt.executeUpdate();
+                    
+                    if (role.equals("admin")) {
+                        new AdminDashboard().setVisible(true);
+                    } else if (role.equals("employee")) {
+                        new EmployeeDashboard(userId).setVisible(true);
+                    }
+                    dispose();
                 } else {
-                    new EmployeeDashboard(userId).setVisible(true);
+                    System.out.println("Password verification failed");
+                    JOptionPane.showMessageDialog(this, 
+                        "Invalid password", 
+                        "Login Error", JOptionPane.ERROR_MESSAGE);
                 }
-                dispose();
             } else {
-                statusLabel.setText("Invalid username, password, or user type.");
-                passwordField.setText("");
+                System.out.println("No user found with username: " + username);
+                // Check if admin account exists, if not create it
+                if (username.equals("admin") && password.equals("admin123")) {
+                    String checkAdminQuery = "SELECT user_id FROM user_accounts WHERE username = 'admin'";
+                    PreparedStatement checkAdminStmt = con.prepareStatement(checkAdminQuery);
+                    ResultSet adminRs = checkAdminStmt.executeQuery();
+                    
+                    if (!adminRs.next()) {
+                        // Create admin account with hashed password
+                        String hashedPassword = hashPassword("admin123");
+                        String insertAdminQuery = "INSERT INTO user_accounts (user_id, username, password, role) VALUES ('ADMIN001', 'admin', ?, 'admin')";
+                        PreparedStatement insertAdminStmt = con.prepareStatement(insertAdminQuery);
+                        insertAdminStmt.setString(1, hashedPassword);
+                        insertAdminStmt.executeUpdate();
+                        
+                        // Log the activity
+                        String logQuery = "INSERT INTO activity_logs (user_id, activity_type, details) VALUES ('ADMIN001', 'login', 'Admin account created and logged in')";
+                        PreparedStatement logStmt = con.prepareStatement(logQuery);
+                        logStmt.executeUpdate();
+                        
+                        new AdminDashboard().setVisible(true);
+                        dispose();
+                        return;
+                    }
+                }
+                
+                JOptionPane.showMessageDialog(this, 
+                    "Invalid username", 
+                    "Login Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
+            System.out.println("Error during login: " + ex.getMessage());
             ex.printStackTrace();
-            statusLabel.setText("Login failed: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, 
+                "Error during login: " + ex.getMessage(), 
+                "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     

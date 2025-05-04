@@ -18,7 +18,6 @@ com\company\gui\EmployeeDashboard$7.class
 com\company\gui\HomeFrame$6.class
 com\company\gui\AdminDashboard$31.class
 com\company\gui\AdminDashboard$14.class
-com\company\gui\EmployeeDashboard$13.class
 com\company\gui\JobApplicationForm$3.class
 com\company\gui\AdminDashboard$11.class
 com\company\gui\AdminDashboard$29.class
@@ -37,7 +36,6 @@ com\company\gui\AdminDashboard$27.class
 com\company\gui\EmployeeDashboard$9.class
 com\company\gui\JobAllocationPanel$1.class
 com\company\gui\AdminDashboard$30$2.class
-com\company\gui\EmployeeDashboard$12.class
 com\company\utils\QRCodeGenerator.class
 com\company\gui\HomeFrame$8.class
 com\company\gui\ApplicationForm$3.class
@@ -49,7 +47,6 @@ com\company\database\DBConnection.class
 com\company\gui\LoginFrame$3.class
 com\company\gui\AdminDashboard$16.class
 com\company\gui\AdminDashboard$8.class
-com\company\gui\EmployeeDashboard$11.class
 com\company\gui\JobApplicationForm$1.class
 com\company\gui\RegisterForm$5.class
 com\company\gui\JobApplicationForm.class
@@ -88,6 +85,7 @@ com\company\gui\EmployeeDashboard$3.class
 com\company\gui\HomeFrame$2.class
 com\company\gui\AdminDashboard$3.class
 com\company\gui\ApplicationForm$2.class
+com\company\gui\EmployeeDashboard$AttendanceRecord.class
 com\company\gui\AdminDashboard$6.class
 com\company\gui\RegisterForm$3.class
 com\company\gui\ApplicationForm.class
@@ -98,7 +96,6 @@ com\company\gui\EmployeeDashboard$6.class
 com\company\gui\AdminDashboard$5.class
 com\company\gui\HomeFrame$5.class
 com\company\gui\AdminDashboard$30.class
-com\company\gui\EmployeeDashboard$StatusCellEditor.class
 com\company\gui\RegisterForm$2.class
 com\company\gui\EmployeeDashboard$5.class
 com\company\gui\LoginFrame$6.class

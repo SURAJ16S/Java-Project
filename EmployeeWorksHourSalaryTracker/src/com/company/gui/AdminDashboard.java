@@ -22,6 +22,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
 
 public class AdminDashboard extends JFrame {
   
@@ -689,34 +693,42 @@ public class AdminDashboard extends JFrame {
     }
     
     private void loadEmployees(DefaultTableModel model) {
-        Connection connection = null;
         try {
-            connection = DBConnection.getConnection();
-            String sql = "SELECT e.employee_id, e.full_name, e.department, e.designation, e.upi, e.mobile_number " +
-                        "FROM employees e ORDER BY e.employee_id";
-            try (PreparedStatement stmt = connection.prepareStatement(sql);
-                 ResultSet rs = stmt.executeQuery()) {
-                
-                model.setRowCount(0);
-                
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                        rs.getString("employee_id"),
-                        rs.getString("full_name"),
-                        rs.getString("department"),
-                        rs.getString("designation"),
-                        rs.getString("upi"),
-                        rs.getString("mobile_number")
-                    });
-                }
+            Connection con = DBConnection.getConnection();
+            
+            // Clear existing data
+            model.setRowCount(0);
+            
+            // Get all employees from both tables
+            String query = "SELECT e.employee_id, e.full_name, e.email, e.department, e.designation, " +
+                          "e.gender, e.upi, e.mobile_number, " +
+                          "CASE WHEN u.user_id IS NOT NULL THEN 'Yes' ELSE 'No' END as has_account " +
+                          "FROM employees e " +
+                          "LEFT JOIN user_accounts u ON e.employee_id = u.user_id " +
+                          "ORDER BY e.full_name";
+            
+            PreparedStatement pst = con.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("employee_id"),
+                    rs.getString("full_name"),
+                    rs.getString("email"),
+                    rs.getString("department"),
+                    rs.getString("designation"),
+                    rs.getString("gender"),
+                    rs.getString("upi"),
+                    rs.getString("mobile_number"),
+                    rs.getString("has_account")
+                });
             }
-        } catch (SQLException ex) {
-            Logger.getLogger(AdminDashboard.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(this, "Error loading employees: " + ex.getMessage());
-        } finally {
-            if (connection != null) {
-                DBConnection.closeConnection();
-            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, 
+                "Error loading employees: " + ex.getMessage(), 
+                "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -1399,9 +1411,8 @@ public class AdminDashboard extends JFrame {
                 // Calculate base salary
                 double baseSalary = totalHours * avgRate;
                 
-                // Calculate deductions for absent days
-                double dailyRate = baseSalary / totalDays;
-                double absentDeduction = absentDays * dailyRate;
+                // Calculate deductions for absent days (₹500 per day)
+                double absentDeduction = absentDays * 500; // Fixed ₹500 per day deduction
                 
                 // Calculate night shift allowance (if applicable)
                 double nightShiftAllowance = 0;
@@ -1420,7 +1431,7 @@ public class AdminDashboard extends JFrame {
                     nightShiftAllowance = nightHours * avgRate * 0.2; // 20% extra for night shifts
                 }
                 
-                // Calculate overtime pay
+                // Calculate overtime pay (₹300 per hour)
                 double overtimePay = 0;
                 String overtimeQuery = "SELECT SUM(hours) as overtime_hours " +
                                      "FROM work_assignments " +
@@ -1434,7 +1445,7 @@ public class AdminDashboard extends JFrame {
                 
                 if (overtimeRs.next()) {
                     double overtimeHours = overtimeRs.getDouble("overtime_hours");
-                    overtimePay = overtimeHours * avgRate * 0.5; // 50% extra for overtime
+                    overtimePay = overtimeHours * 300; // Fixed ₹300 per hour for overtime
                 }
                 
                 // Calculate total salary
@@ -1454,22 +1465,23 @@ public class AdminDashboard extends JFrame {
                     int calcId = checkRs.getInt("calculation_id");
                     String updateQuery = "UPDATE salary_calculations SET " +
                                        "base_salary = ?, absent_deduction = ?, night_shift_allowance = ?, " +
-                                       "overtime_pay = ?, total_salary = ? " +
+                                       "overtime_pay = ?, hourly_pay = ?, total_salary = ? " +
                                        "WHERE calculation_id = ?";
                     PreparedStatement updateStmt = con.prepareStatement(updateQuery);
                     updateStmt.setDouble(1, baseSalary);
                     updateStmt.setDouble(2, absentDeduction);
                     updateStmt.setDouble(3, nightShiftAllowance);
                     updateStmt.setDouble(4, overtimePay);
-                    updateStmt.setDouble(5, totalSalary);
-                    updateStmt.setInt(6, calcId);
+                    updateStmt.setDouble(5, avgRate);
+                    updateStmt.setDouble(6, totalSalary);
+                    updateStmt.setInt(7, calcId);
                     updateStmt.executeUpdate();
                 } else {
                     // Insert new calculation
                     String insertQuery = "INSERT INTO salary_calculations " +
                                        "(employee_id, month, year, base_salary, absent_deduction, " +
-                                       "night_shift_allowance, overtime_pay, total_salary) " +
-                                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                                       "night_shift_allowance, overtime_pay, hourly_pay, total_salary) " +
+                                       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     PreparedStatement insertStmt = con.prepareStatement(insertQuery);
                     insertStmt.setString(1, employeeId);
                     insertStmt.setInt(2, currentMonth);
@@ -1478,7 +1490,8 @@ public class AdminDashboard extends JFrame {
                     insertStmt.setDouble(5, absentDeduction);
                     insertStmt.setDouble(6, nightShiftAllowance);
                     insertStmt.setDouble(7, overtimePay);
-                    insertStmt.setDouble(8, totalSalary);
+                    insertStmt.setDouble(8, avgRate);
+                    insertStmt.setDouble(9, totalSalary);
                     insertStmt.executeUpdate();
                 }
                 
@@ -1581,116 +1594,172 @@ public class AdminDashboard extends JFrame {
                     String totalSalaryStr = (String) model.getValueAt(selectedRow, 4);
                     double totalSalary = Double.parseDouble(totalSalaryStr.replaceAll("[^0-9.]", ""));
                     if (totalSalary > 0) {
-                        // Generate QR code
-                        String qrContent = "Pay ₹" + totalSalary + " to " + name + " (" + employeeId + ")";
-                        ImageIcon qrIcon = null;
-                        try {
-                            java.awt.image.BufferedImage qrImg = QRCodeGenerator.generateQRCode(qrContent, 200, Color.WHITE, Color.BLACK, ErrorCorrectionLevel.H);
-                            qrIcon = new ImageIcon(qrImg);
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                        JLabel qrLabel = qrIcon != null ? new JLabel(qrIcon) : new JLabel("[QR Code]");
-                        JPanel qrPanel = new JPanel(new BorderLayout());
-                        qrPanel.add(new JLabel("Scan to pay:"), BorderLayout.NORTH);
-                        qrPanel.add(qrLabel, BorderLayout.CENTER);
-                        // Custom dialog with 'Pay' button
-                        JDialog payDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(panel), "Pay Salary", true);
-                        payDialog.setSize(350, 420);
-                        payDialog.setLocationRelativeTo(panel);
-                        payDialog.setUndecorated(true);
-                        JPanel dialogPanel = new JPanel(new BorderLayout(0, 0));
-                        dialogPanel.setBackground(new Color(245, 250, 255));
-                        dialogPanel.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(new Color(70, 130, 180), 2, true),
-                            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-                        ));
-                        // Header
-                        JLabel header = new JLabel("Salary Payment", SwingConstants.CENTER);
-                        header.setFont(new Font("Segoe UI", Font.BOLD, 20));
-                        header.setForeground(new Color(60, 120, 180));
-                        dialogPanel.add(header, BorderLayout.NORTH);
-                        // QR and info
-                        JPanel qrInfoPanel = new JPanel();
-                        qrInfoPanel.setLayout(new BoxLayout(qrInfoPanel, BoxLayout.Y_AXIS));
-                        qrInfoPanel.setOpaque(false);
-                        JLabel amountLabel = new JLabel(String.format("Amount: ₹%,.2f", totalSalary));
-                        amountLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-                        amountLabel.setForeground(new Color(40, 100, 60));
-                        amountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                        JLabel empLabel = new JLabel(name + " (" + employeeId + ")");
-                        empLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-                        empLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                        qrLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                        qrLabel.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
-                            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-                        ));
-                        qrInfoPanel.add(Box.createVerticalStrut(10));
-                        qrInfoPanel.add(amountLabel);
-                        qrInfoPanel.add(Box.createVerticalStrut(5));
-                        qrInfoPanel.add(empLabel);
-                        qrInfoPanel.add(Box.createVerticalStrut(15));
-                        qrInfoPanel.add(qrLabel);
-                        qrInfoPanel.add(Box.createVerticalStrut(10));
-                        JSeparator sep = new JSeparator();
-                        sep.setMaximumSize(new Dimension(300, 1));
-                        qrInfoPanel.add(sep);
-                        dialogPanel.add(qrInfoPanel, BorderLayout.CENTER);
-                        // Pay button
-                        JButton payButton = new JButton("Pay");
-                        payButton.setBackground(new Color(60, 179, 113));
-                        payButton.setForeground(Color.WHITE);
-                        payButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
-                        payButton.setFocusPainted(false);
-                        payButton.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
-                        payButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                        payButton.addMouseListener(new java.awt.event.MouseAdapter() {
-                            public void mouseEntered(java.awt.event.MouseEvent e) {
-                                payButton.setBackground(new Color(50, 150, 90));
-                            }
-                            public void mouseExited(java.awt.event.MouseEvent e) {
-                                payButton.setBackground(new Color(60, 179, 113));
-                            }
-                        });
-                        payButton.addActionListener(new ActionListener() {
-                            public void actionPerformed(ActionEvent e) {
-                                // Prompt for PIN
-                                String pin = JOptionPane.showInputDialog(payDialog, "Enter PIN to confirm payment:", "PIN Required", JOptionPane.PLAIN_MESSAGE);
-                                if (pin != null && pin.equals("1234")) {
-                                    // Mark as paid (set total_salary to 0)
-                                    try {
-                                        Connection con = DBConnection.getConnection();
-                                        String updateQuery = "UPDATE salary_calculations SET total_salary = 0 WHERE employee_id = ? AND month = ? AND year = ?";
-                                        PreparedStatement updateStmt = con.prepareStatement(updateQuery);
-                                        updateStmt.setString(1, employeeId);
-                                        updateStmt.setInt(2, month);
-                                        updateStmt.setInt(3, year);
-                                        updateStmt.executeUpdate();
-                                        // Optionally, insert into salary_payments
-                                        String insertPayment = "INSERT INTO salary_payments (employee_id, payment_date, amount) VALUES (?, CURDATE(), ?)";
-                                        PreparedStatement payStmt = con.prepareStatement(insertPayment);
-                                        payStmt.setString(1, employeeId);
-                                        payStmt.setDouble(2, totalSalary);
-                                        payStmt.executeUpdate();
-                                        JOptionPane.showMessageDialog(panel, "Payment complete!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                                        payDialog.dispose();
-                                        loadPendingSalaries(model);
-                                    } catch (Exception ex) {
-                                        ex.printStackTrace();
-                                        JOptionPane.showMessageDialog(panel, "Error updating payment: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                                    }
-                                } else if (pin != null) {
-                                    JOptionPane.showMessageDialog(payDialog, "Incorrect PIN. Payment not processed.", "Error", JOptionPane.ERROR_MESSAGE);
+                        try (Connection con = DBConnection.getConnection()) {
+                            // Get employee's UPI and mobile details
+                            String upiQuery = "SELECT e.upi, e.mobile_number, e.full_name, e.employee_id, e.department " +
+                                            "FROM employees e WHERE e.employee_id = ?";
+                            PreparedStatement upiStmt = con.prepareStatement(upiQuery);
+                            upiStmt.setString(1, employeeId);
+                            ResultSet upiRs = upiStmt.executeQuery();
+                            
+                            if (upiRs.next()) {
+                                String upi = upiRs.getString("upi");
+                                String mobileNumber = upiRs.getString("mobile_number");
+                                String fullName = upiRs.getString("full_name");
+                                String empId = upiRs.getString("employee_id");
+                                String department = upiRs.getString("department");
+                                
+                                if (upi == null || upi.isEmpty() || mobileNumber == null || mobileNumber.isEmpty()) {
+                                    JOptionPane.showMessageDialog(panel, 
+                                        "Employee's UPI ID and mobile number are not set. Please ask the employee to update their details first.", 
+                                        "Error", JOptionPane.ERROR_MESSAGE);
+                                    return;
                                 }
+                                
+                                // Create UPI string for salary payment
+                                String upiString = String.format("upi://pay?pa=%s&pn=%s&am=%.2f&tn=Salary%%20Payment%%20-%s%%20(%s)&cu=INR", 
+                                    upi, 
+                                    fullName,
+                                    totalSalary,
+                                    empId,
+                                    department);
+                                
+                                // Generate QR code
+                                ImageIcon qrIcon = null;
+                                try {
+                                    BitMatrix bitMatrix = new MultiFormatWriter().encode(upiString, BarcodeFormat.QR_CODE, 300, 300);
+                                    BufferedImage qrImg = MatrixToImageWriter.toBufferedImage(bitMatrix);
+                                    qrIcon = new ImageIcon(qrImg);
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                                
+                                JLabel qrLabel = qrIcon != null ? new JLabel(qrIcon) : new JLabel("[QR Code]");
+                                JPanel qrPanel = new JPanel(new BorderLayout());
+                                qrPanel.add(new JLabel("Scan to pay:"), BorderLayout.NORTH);
+                                qrPanel.add(qrLabel, BorderLayout.CENTER);
+                                
+                                // Custom dialog with 'Pay' button
+                                JDialog payDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(panel), "Pay Salary", true);
+                                payDialog.setSize(450, 550); // Further increased size
+                                payDialog.setLocationRelativeTo(panel);
+                                payDialog.setUndecorated(true);
+                                
+                                JPanel dialogPanel = new JPanel(new BorderLayout(0, 0));
+                                dialogPanel.setBackground(new Color(245, 250, 255));
+                                dialogPanel.setBorder(BorderFactory.createCompoundBorder(
+                                    BorderFactory.createLineBorder(new Color(70, 130, 180), 2, true),
+                                    BorderFactory.createEmptyBorder(25, 25, 25, 25) // Increased padding
+                                ));
+                                
+                                // Header
+                                JLabel header = new JLabel("Salary Payment", SwingConstants.CENTER);
+                                header.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                                header.setForeground(new Color(60, 120, 180));
+                                dialogPanel.add(header, BorderLayout.NORTH);
+                                
+                                // QR and info
+                                JPanel qrInfoPanel = new JPanel();
+                                qrInfoPanel.setLayout(new BoxLayout(qrInfoPanel, BoxLayout.Y_AXIS));
+                                qrInfoPanel.setOpaque(false);
+                                
+                                JLabel amountLabel = new JLabel(String.format("Amount: ₹%,.2f", totalSalary));
+                                amountLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+                                amountLabel.setForeground(new Color(40, 100, 60));
+                                amountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                                
+                                JLabel empLabel = new JLabel(fullName + " (" + empId + ")");
+                                empLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+                                empLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                                
+                                JLabel upiLabel = new JLabel("UPI: " + upi);
+                                upiLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                                upiLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                                
+                                qrLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                                qrLabel.setBorder(BorderFactory.createCompoundBorder(
+                                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true),
+                                    BorderFactory.createEmptyBorder(15, 15, 15, 15) // Increased padding around QR
+                                ));
+                                
+                                qrInfoPanel.add(Box.createVerticalStrut(15)); // Increased spacing
+                                qrInfoPanel.add(amountLabel);
+                                qrInfoPanel.add(Box.createVerticalStrut(10)); // Increased spacing
+                                qrInfoPanel.add(empLabel);
+                                qrInfoPanel.add(Box.createVerticalStrut(10)); // Increased spacing
+                                qrInfoPanel.add(upiLabel);
+                                qrInfoPanel.add(Box.createVerticalStrut(20)); // Increased spacing
+                                qrInfoPanel.add(qrLabel);
+                                qrInfoPanel.add(Box.createVerticalStrut(15)); // Increased spacing
+                                
+                                JSeparator sep = new JSeparator();
+                                sep.setMaximumSize(new Dimension(350, 1)); // Increased width
+                                qrInfoPanel.add(sep);
+                                dialogPanel.add(qrInfoPanel, BorderLayout.CENTER);
+                                
+                                // Pay button
+                                JButton payButton = new JButton("Pay");
+                                payButton.setBackground(new Color(60, 179, 113));
+                                payButton.setForeground(Color.WHITE);
+                                payButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                                payButton.setFocusPainted(false);
+                                payButton.setBorder(BorderFactory.createEmptyBorder(12, 30, 12, 30));
+                                payButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                                
+                                payButton.addMouseListener(new java.awt.event.MouseAdapter() {
+                                    public void mouseEntered(java.awt.event.MouseEvent e) {
+                                        payButton.setBackground(new Color(50, 150, 90));
+                                    }
+                                    public void mouseExited(java.awt.event.MouseEvent e) {
+                                        payButton.setBackground(new Color(60, 179, 113));
+                                    }
+                                });
+                                
+                                payButton.addActionListener(new ActionListener() {
+                                    public void actionPerformed(ActionEvent e) {
+                                        // Prompt for PIN
+                                        String pin = JOptionPane.showInputDialog(payDialog, "Enter PIN to confirm payment:", "PIN Required", JOptionPane.PLAIN_MESSAGE);
+                                        if (pin != null && pin.equals("1234")) {
+                                            // Mark as paid (set total_salary to 0)
+                                            try (Connection con = DBConnection.getConnection()) {
+                                                String updateQuery = "UPDATE salary_calculations SET total_salary = 0 WHERE employee_id = ? AND month = ? AND year = ?";
+                                                PreparedStatement updateStmt = con.prepareStatement(updateQuery);
+                                                updateStmt.setString(1, employeeId);
+                                                updateStmt.setInt(2, month);
+                                                updateStmt.setInt(3, year);
+                                                updateStmt.executeUpdate();
+                                                
+                                                // Insert into salary_payments
+                                                String insertPayment = "INSERT INTO salary_payments (employee_id, payment_date, amount) VALUES (?, CURDATE(), ?)";
+                                                PreparedStatement payStmt = con.prepareStatement(insertPayment);
+                                                payStmt.setString(1, employeeId);
+                                                payStmt.setDouble(2, totalSalary);
+                                                payStmt.executeUpdate();
+                                                
+                                                JOptionPane.showMessageDialog(panel, "Payment complete!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                                                payDialog.dispose();
+                                                loadPendingSalaries(model);
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                                JOptionPane.showMessageDialog(panel, "Error updating payment: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                                            }
+                                        } else if (pin != null) {
+                                            JOptionPane.showMessageDialog(payDialog, "Incorrect PIN. Payment not processed.", "Error", JOptionPane.ERROR_MESSAGE);
+                                        }
+                                    }
+                                });
+                                
+                                JPanel btnPanel = new JPanel();
+                                btnPanel.setOpaque(false);
+                                btnPanel.add(payButton);
+                                dialogPanel.add(btnPanel, BorderLayout.SOUTH);
+                                payDialog.setContentPane(dialogPanel);
+                                payDialog.setVisible(true);
                             }
-                        });
-                        JPanel btnPanel = new JPanel();
-                        btnPanel.setOpaque(false);
-                        btnPanel.add(payButton);
-                        dialogPanel.add(btnPanel, BorderLayout.SOUTH);
-                        payDialog.setContentPane(dialogPanel);
-                        payDialog.setVisible(true);
+                        } catch (SQLException ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(panel, "Error fetching employee details: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        }
                     }
                 }
             }

@@ -204,16 +204,18 @@ public class DBConnection {
                         "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
             
             // Create salary_calculations table
-            stmt.execute("CREATE TABLE IF NOT EXISTS salary_calculations (" +
+            stmt.execute("DROP TABLE IF EXISTS salary_calculations");
+            stmt.execute("CREATE TABLE salary_calculations (" +
                         "calculation_id INT AUTO_INCREMENT PRIMARY KEY, " +
                         "employee_id VARCHAR(20) NOT NULL, " +
                         "month INT NOT NULL, " +
                         "year INT NOT NULL, " +
                         "base_salary DECIMAL(10,2) NOT NULL, " +
+                        "absent_deduction DECIMAL(10,2) DEFAULT 0, " +
+                        "night_shift_allowance DECIMAL(10,2) DEFAULT 0, " +
                         "overtime_pay DECIMAL(10,2) DEFAULT 0, " +
-                        "deductions DECIMAL(10,2) DEFAULT 0, " +
-                        "net_salary DECIMAL(10,2) NOT NULL, " +
-                        "status VARCHAR(20) DEFAULT 'pending', " +
+                        "hourly_pay DECIMAL(10,2) DEFAULT 0, " +
+                        "total_salary DECIMAL(10,2) NOT NULL, " +
                         "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                         "FOREIGN KEY (employee_id) REFERENCES employees(employee_id))");
             
