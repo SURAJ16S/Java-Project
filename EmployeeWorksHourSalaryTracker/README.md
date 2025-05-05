@@ -7,6 +7,7 @@ A comprehensive Java-based application for managing employee work hours, attenda
 ## 👥 Developers
 - **Suraj Bagul** 
 - **Yash Borude**
+- **Samarth Bhingardive**
 
 ## 📋 Table of Contents
 - [Overview](#-overview)
@@ -1710,4 +1711,4 @@ public class ContactManager {
 
 ---
 
-Made with ❤️ by **Suraj Bagul** and **Yash Borude** 
+Made with ❤️ by **Suraj Bagul** , **Yash Borude** and **Samarth Bhingardive** 
