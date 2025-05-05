@@ -268,43 +268,32 @@ public class LoginFrame extends JFrame {
             
             // Check regular user credentials (for admin and other users)
             String query = "SELECT user_id, username, password, role FROM user_accounts WHERE username = ?";
-            System.out.println("Executing query: " + query + " with username: " + username);
             PreparedStatement pst = con.prepareStatement(query);
             pst.setString(1, username);
             ResultSet rs = pst.executeQuery();
             
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                String userId = rs.getString("user_id");
+                String hashedInputPassword = hashPassword(password);
                 String role = rs.getString("role");
                 
-                // Hash the input password for comparison
-                String hashedInputPassword = hashPassword(password);
-                
-                System.out.println("User found in database:");
-                System.out.println("Username: " + username);
-                System.out.println("User ID: " + userId);
-                System.out.println("Role: " + role);
-                System.out.println("Stored password hash: " + storedPassword);
-                System.out.println("Input password hash: " + hashedInputPassword);
-                System.out.println("Password match: " + hashedInputPassword.equals(storedPassword));
-                
                 if (hashedInputPassword.equals(storedPassword)) {
-                    System.out.println("Password verification successful");
                     // Log the activity
-                    String logQuery = "INSERT INTO activity_logs (user_id, activity_type, details) VALUES (?, 'login', 'User logged in')";
+                    String logQuery = "INSERT INTO activity_logs (user_id, activity_type, details) VALUES (?, 'login', 'User logged in successfully')";
                     PreparedStatement logStmt = con.prepareStatement(logQuery);
-                    logStmt.setString(1, userId);
+                    logStmt.setString(1, rs.getString("user_id"));
                     logStmt.executeUpdate();
                     
+                    // Open appropriate dashboard based on role
                     if (role.equals("admin")) {
                         new AdminDashboard().setVisible(true);
                     } else if (role.equals("employee")) {
-                        new EmployeeDashboard(userId).setVisible(true);
+                        new EmployeeDashboard(rs.getString("user_id")).setVisible(true);
+                    } else if (role.equals("developer")) {
+                        new DeveloperDashboard(rs.getString("user_id")).setVisible(true);
                     }
                     dispose();
                 } else {
-                    System.out.println("Password verification failed");
                     JOptionPane.showMessageDialog(this, 
                         "Invalid password", 
                         "Login Error", JOptionPane.ERROR_MESSAGE);
@@ -337,7 +326,7 @@ public class LoginFrame extends JFrame {
                 }
                 
                 JOptionPane.showMessageDialog(this, 
-                    "Invalid username", 
+                    "User not found", 
                     "Login Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
