@@ -1,6 +1,6 @@
 # Employee Works Hour and Salary Tracker
 
-![Project Logo](logo.png)
+![Project Logo](EmployeeWorksHourSalaryTracker/logo.png)
 
 A comprehensive Java-based application for managing employee work hours, attendance, and salary processing with UPI payment integration.
 
